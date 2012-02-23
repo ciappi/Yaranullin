@@ -17,18 +17,18 @@
 import pygame
 from weakref import WeakValueDictionary
 
-from base.containers import Container
+from base.containers import ScrollableContainer
 from pawn import Pawn
 from ..config import CONFIG
 
 
-class Board(Container):
+class Board(ScrollableContainer):
 
     """The view of a Board."""
 
     def __init__(self, event_manager, board_id, name, width, height,
                  rect=None):
-        Container.__init__(self, event_manager, rect)
+        ScrollableContainer.__init__(self, event_manager, rect)
         self.board_id = board_id
         self.name = name
         self.width = width
@@ -71,4 +71,4 @@ class Board(Container):
     def handle_tick(self, ev_type, dt):
         """Handle ticks if the board is active."""
         if self.active:
-            Container.handle_tick(self, ev_type, dt)
+            ScrollableContainer.handle_tick(self, ev_type, dt)

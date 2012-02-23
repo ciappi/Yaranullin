@@ -29,6 +29,7 @@ class Container(EventManagerAndListener):
         EventManagerAndListener.__init__(self, main_window)
         self.widgets = pygame.sprite.Group()
         self.ordered_widgets = []
+        self.view = (0, 0)
         if rect is None:
             self.rect = pygame.rect.Rect(0, 0, 0, 0)
         else:
@@ -72,10 +73,12 @@ class Container(EventManagerAndListener):
         """Draw this container and its widgets."""
         # This is the destination surface on the screen.
         surf = pygame.display.get_surface().subsurface(self.abs_rect)
-        # Draw the background image.
-        surf.blit(self.image, (0, 0))
+        # Copy the background image and pass it to the widgets.
+        im = self.image.copy()
         # Draw all the widgets.
-        self.widgets.draw(surf)
+        self.widgets.draw(im)
+        # Draw the background image.
+        surf.blit(im, self.view)
 
     def handle_tick(self, ev_type, dt):
         """Handle tick event."""
@@ -114,3 +117,20 @@ class HContainer(OrderedContainer):
             widget.rect.centery = cy
             r = widget.rect.right
             left = r + self.gap
+
+
+class ScrollableContainer(Container):
+
+    def handle_mouse_drag_left(self, ev_type, rel, pos):
+        if self.abs_rect.collidepoint(pos):
+            # Limit the scrolling to the size of the board.
+            x = min(self.view[0] + rel[0], 0)
+            y = min(self.view[1] + rel[1], 0)
+            x = max(x, self.rect.width - self.image.get_width())
+            y = max(y, self.rect.height - self.image.get_height())
+            # Limit the scrolling if the image is smaller than the screen.
+            if (self.rect.width - self.image.get_width()) > 0:
+                x = 0
+            if (self.rect.height - self.image.get_height()) > 0:
+                y = 0
+            self.view = x, y
