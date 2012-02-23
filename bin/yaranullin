@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+#
+# bin/yaranullin
+#
+# Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+import sys
+import os
+import imp
+import argparse
+import logging
+
+
+try:
+    imp.find_module('yaranullin')
+except ImportError:
+    new_path = os.path.split(os.path.dirname(__file__))[0]
+    sys.path.append(new_path)
+finally:
+    from yaranullin.main import main
+    from yaranullin.config import __version__, LOG_FILE_CLIENT, LOG_FILE_SERVER, LOG_LEVEL
+
+
+def parse_args():
+    # Parse input arguments.
+    parser = argparse.ArgumentParser(description='Launches Yaranullin.')
+    parser.add_argument('mode', action="store", type=str,
+                        help="The mode: for now just 'test'...")
+    parser.add_argument('--game', action='store', type=str,
+                        help='Specify a game to load.')
+    parser.add_argument('--host', action='store', type=str,
+                        help='Specify a network host address.')
+    parser.add_argument('--port', action='store', type=int,
+                        help='Specify a network port.')
+    parser.add_argument('--version', action='version',
+                        version='Yaranullin ' + __version__)
+    args = parser.parse_args()
+    return args
+
+
+def init_logging(mode):
+    # Initialize logging system
+    if mode == 'server':
+        fname = LOG_FILE_SERVER
+    elif mode == 'client':
+        fname = LOG_FILE_CLIENT
+    try:
+        level = getattr(logging, LOG_LEVEL)
+    except AttributeError:
+        level = logging.WARNING
+    # The log file is cleared when the client starts.
+    logging.basicConfig(filename=fname, filemode='w', level=level)
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    init_logging(args.mode)
+    main(args)
+
