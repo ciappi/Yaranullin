@@ -1,8 +1,11 @@
 # Yaranullin Event List
 
+TODO: explain the event system.
+
 ## General
 
 ### tick
+
 ### quit
 
 ## User inputs
