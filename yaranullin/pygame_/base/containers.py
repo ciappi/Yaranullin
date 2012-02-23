@@ -35,6 +35,7 @@ class Container(EventManagerAndListener):
         else:
             self.rect = rect
         self.image = pygame.surface.Surface((self.rect.size)).convert()
+        self._image = self.image.copy()
 
     @property
     def abs_pos(self):
@@ -73,12 +74,12 @@ class Container(EventManagerAndListener):
         """Draw this container and its widgets."""
         # This is the destination surface on the screen.
         surf = pygame.display.get_surface().subsurface(self.abs_rect)
-        # Copy the background image and pass it to the widgets.
-        im = self.image.copy()
+        # Clear the widgets.
+        self.widgets.clear(self.image, self._image)
         # Draw all the widgets.
-        self.widgets.draw(im)
+        self.widgets.draw(self.image)
         # Draw the background image.
-        surf.blit(im, self.view)
+        surf.blit(self.image, self.view)
 
     def handle_tick(self, ev_type, dt):
         """Handle tick event."""
