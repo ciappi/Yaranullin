@@ -85,19 +85,18 @@ class TextLabel(Widget):
         self.font_color = font_color
         self.font_size = font_size
         self.font_name = os.path.join(YR_RES_DIR, font_name)
+        try:
+            self.font = pygame.font.Font(self.font_name,
+                                         self.font_size)
+        except:
+            default = pygame.font.get_default_font()
+            self.font = pygame.font.SysFont(default, self.font_size)
         self.render_text()
 
     def render_text(self):
         """Render the text using the given parameters."""
         text = self.text
-        size = self.font_size
-        name = self.font_name
         color = self.font_color
         # Fallback to default font if needed.
-        try:
-            self.font = pygame.font.Font(name, size)
-        except:
-            default = pygame.font.get_default_font()
-            self.font = pygame.font.SysFont(default, size)
         self.image = self.font.render(text, True, color)
         self.rect.size = self.image.get_rect().size

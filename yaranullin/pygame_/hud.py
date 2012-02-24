@@ -39,6 +39,15 @@ class PawnToken(TextLabel):
         TextLabel.__init__(self, event_manager, text=name, font_color=color,
                            font_size=20, font_name='hud_font.ttf')
 
+    def handle_game_event_pawn_next(self, ev_type, pawn_id):
+        if self.pawn_id == pawn_id:
+            self.font.set_underline(True)
+            self.font.set_italic(True)
+        else:
+            self.font.set_underline(False)
+            self.font.set_italic(False)
+        self.render_text()
+
 
 class HUD(VContainer):
 
