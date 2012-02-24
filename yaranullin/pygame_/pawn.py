@@ -23,7 +23,7 @@ from ..config import CONFIG, COLORS
 class Pawn(Widget):
 
     def __init__(self, event_manager, pawn_id, name, initiative, x, y, width,
-                 height, color=None, image=None):
+                 height, rotated, color=None, image=None):
         Widget.__init__(self, event_manager)
         self.active = False
         self.pawn_id = pawn_id
@@ -35,7 +35,7 @@ class Pawn(Widget):
         self.height = height
         self.color = color
         self.image = image
-        self.rotated = False
+        self.rotated = rotated
         self.tw = CONFIG.getint('graphics', 'tile-width')
         if self.color is None:
             n_colors = len(COLORS)
@@ -47,16 +47,20 @@ class Pawn(Widget):
             size = (width * tw - int(tw * 0.2), height * tw - int(tw * 0.2))
             self.image = pygame.surface.Surface(size).convert()
             self.image.fill(self.color)
-            self.update_rect()
         self._image = self.image.copy()
+        self.update_rect()
 
     def update_rect(self):
         """Update."""
         if self.rotated:
             self.image = pygame.transform.rotate(self._image, -90)
+            width, height = self.height, self.width
+        else:
+            self.image = self._image
+            width, height = self.width, self.height
         self.rect.size = self.image.get_rect().size
-        self.rect.center = (self.x * self.tw + self.width * self.tw // 2,
-                            self.y * self.tw + self.height * self.tw // 2)
+        self.rect.center = (self.x * self.tw + width * self.tw // 2,
+                            self.y * self.tw + height * self.tw // 2)
 
     def handle_game_event_pawn_next(self, ev_type, pawn_id):
         """Handle a pawn change."""

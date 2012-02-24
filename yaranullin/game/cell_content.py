@@ -27,14 +27,14 @@ class CellContent(Listener):
 
     """The content of a cell."""
 
-    def __init__(self, board, x, y, width, height):
+    def __init__(self, board, x, y, width, height, rotated):
         Listener.__init__(self, board)
         self.width = width
         self.height = height
         self.x = x
         self.y = y
         self.rotated = False
-        placed = self.place(x, y, False)
+        placed = self.place(x, y, rotated)
         if not placed:
             logging.info('Unable to create CellContent at (' + str(self.x) +
                          ',' + str(self.y) + ')')

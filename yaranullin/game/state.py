@@ -32,7 +32,7 @@ def _load(state_elem, xml_elem):
         try:
             value = int(value)
         except ValueError:
-            pass
+            value = eval(value) if value in ('False', 'True') else value
         state_elem[key] = value
     for sub_elem in xml_elem.getchildren():
         tag = sub_elem.tag

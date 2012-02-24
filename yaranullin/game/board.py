@@ -33,10 +33,10 @@ class Board(EventManagerAndListener):
         self.active_pawn = None
         self.name = name
 
-    def add_pawn(self, name, initiative, x, y, width, height):
+    def add_pawn(self, **kargs):
         """Create and add a Pawn to the Board."""
         try:
-            new_pawn = Pawn(self, name, initiative, x, y, width, height)
+            new_pawn = Pawn(self, **kargs)
         except CellContentInitializationError:
             new_pawn_id = None
         else:
