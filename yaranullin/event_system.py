@@ -17,9 +17,14 @@
 """The event system of Yaranullin."""
 
 import logging
+import sys
 
+from random import choice
 from weakref import proxy
 from collections import deque
+
+
+LISTENER_IDS_POOL = frozenset(range(2 ** 16))
 
 
 class Event(object):
@@ -52,6 +57,17 @@ class EventManager(object):
         self.events = dict()
         # Global event queue, thread safe thanks to deque.
         self.event_queue = deque()
+
+    def get_free_id(self):
+        used_ids = set()
+        for listeners in self.events.values():
+            used_ids |= set([listener.id for listener in listeners])
+        free_ids = list(LISTENER_IDS_POOL - used_ids)
+        if len(free_ids):
+            return choice(free_ids)
+        else:
+            sys.exit('Max number of listeners reached ('
+                     + str(len(LISTENER_IDS_POOL)) + ')')
 
     def attach_listener(self, listener, *wanted_events):
         """Register a Listener."""
@@ -130,6 +146,10 @@ class Listener(object):
         # Attach to event manager.
         self.attach()
 
+    def get_free_id(self):
+        """Get a unique id."""
+        return self.event_manager.get_free_id()
+
     def post(self, *events):
         """Post events to the parent event manager."""
         self.event_manager.post(*events)
@@ -161,6 +181,10 @@ class EventManagerAndListener(EventManager, Listener):
     It will register to its parent event manager with its own wanted events as
     well as listeners'.
     """
+
+    def get_free_id(self):
+        """Get a unique id."""
+        return self.event_manager.get_free_id()
 
     def __init__(self, event_manager, independent=False):
         EventManager.__init__(self)
