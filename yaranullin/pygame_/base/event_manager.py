@@ -15,6 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import pygame
+import pygame.locals as PL
 
 from controllers import PygameKeyboard, PygameMouse, PygameSystem
 from ...event_system import EventManagerAndListener
@@ -34,7 +35,7 @@ class PygameGUI(EventManagerAndListener):
         self.keyboard_controller = PygameKeyboard(self)
         self.mouse_controller = PygameMouse(self)
         self.system_controller = PygameSystem(self)
-        pygame.display.set_mode((0, 0))
+        pygame.display.set_mode((0, 0), PL.FULLSCREEN)
 
     @property
     def abs_pos(self):

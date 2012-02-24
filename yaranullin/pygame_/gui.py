@@ -58,3 +58,5 @@ class SimpleGUI(PygameGUI):
     def handle_key_down(self, ev_type, key, mod, unicode):
         if key == PL.K_SPACE:
             self.post(Event('game-request-pawn-next'))
+        elif key == PL.K_ESCAPE:
+            self.post(Event('quit'))
