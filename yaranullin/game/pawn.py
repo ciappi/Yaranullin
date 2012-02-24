@@ -23,14 +23,16 @@ class Pawn(CellContent):
     """A PG, an NPG or a monster."""
 
     def __init__(self, board, name, initiative, x, y, width, height,
-                 rotated):
+                 rotated, pawn_id=None):
         CellContent.__init__(self, board, x, y, width, height, rotated)
         self.name = name
         self.initiative = initiative
+        self.uid = pawn_id
+        self.pawn_id = self.uid
 
     def handle_game_request_pawn_move(self, ev_type, pawn_id, dx, dy, rotate):
         """Try to move the Pawn."""
-        if pawn_id != id(self):
+        if pawn_id != self.pawn_id:
             return
         moved = self.move(dx, dy, rotate)
         if moved:
@@ -40,7 +42,7 @@ class Pawn(CellContent):
 
     def handle_game_request_pawn_place(self, ev_type, pawn_id, x, y, rotate):
         """Try to place the Pawn."""
-        if pawn_id != id(self):
+        if pawn_id != self.pawn_id:
             return
         placed = self.place(x, y, rotate)
         if placed:

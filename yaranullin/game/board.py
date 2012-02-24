@@ -24,9 +24,11 @@ class Board(EventManagerAndListener):
 
     """Board class, holds pawns and the grid."""
 
-    def __init__(self, game, name, width, height):
+    def __init__(self, game, name, width, height, board_id=None):
         EventManagerAndListener.__init__(self, game)
         self.grid = Grid(width, height)
+        self.uid = board_id
+        self.board_id = self.uid
         self.pawns = {}
         self.initiatives = []
         self.active = True
@@ -40,7 +42,7 @@ class Board(EventManagerAndListener):
         except CellContentInitializationError:
             new_pawn_id = None
         else:
-            new_pawn_id = id(new_pawn)
+            new_pawn_id = new_pawn.pawn_id
             self.pawns[new_pawn_id] = new_pawn
             self.initiatives.append(new_pawn)
             # Sort the initiatives list.
@@ -73,9 +75,9 @@ class Board(EventManagerAndListener):
 
     def handle_game_request_board_change(self, ev_type, board_id):
         """Activate or deativate this Board."""
-        if board_id == id(self):
+        if board_id == self.board_id:
             self.active = True
-            event = Event('game-event-board-change', board_id=id(self))
+            event = Event('game-event-board-change', board_id=board_id)
             self.post(event)
         else:
             self.active = False
@@ -104,5 +106,5 @@ class Board(EventManagerAndListener):
         if not self.active:
             return
         pawn = self.next_pawn()
-        event = Event('game-event-pawn-next', pawn_id=id(pawn))
+        event = Event('game-event-pawn-next', pawn_id=pawn.pawn_id)
         self.post(event)

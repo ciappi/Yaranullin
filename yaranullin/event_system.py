@@ -61,7 +61,7 @@ class EventManager(object):
     def get_free_id(self):
         used_ids = set()
         for listeners in self.events.values():
-            used_ids |= set([listener.id for listener in listeners])
+            used_ids |= set([listener._uid for listener in listeners])
         free_ids = list(LISTENER_IDS_POOL - used_ids)
         if len(free_ids):
             return choice(free_ids)
@@ -132,6 +132,7 @@ class Listener(object):
         except TypeError:
             # This is already a proxy.
             self.event_manager = event_manager
+        self._uid = None
         # Only methods starting with 'handle_' will be taken into account.
         # For exemple the callback 'handle_sample_event' will be paired
         # with the event 'sample-event'.
@@ -146,9 +147,17 @@ class Listener(object):
         # Attach to event manager.
         self.attach()
 
-    def get_free_id(self):
+    def __set_uid(self, new_uid):
         """Get a unique id."""
-        return self.event_manager.get_free_id()
+        if new_uid is None:
+            self._uid = self.event_manager.get_free_id()
+        else:
+            self._uid = new_uid
+
+    def __get_uid(self):
+        return self._uid
+
+    uid = property(__get_uid, __set_uid)
 
     def post(self, *events):
         """Post events to the parent event manager."""
@@ -182,14 +191,14 @@ class EventManagerAndListener(EventManager, Listener):
     well as listeners'.
     """
 
-    def get_free_id(self):
-        """Get a unique id."""
-        return self.event_manager.get_free_id()
-
     def __init__(self, event_manager, independent=False):
         EventManager.__init__(self)
         Listener.__init__(self, event_manager)
         self.independent = independent
+
+    def get_free_id(self):
+        """Get a unique id."""
+        return self.event_manager.get_free_id()
 
     def upgrade_wanted_events(self):
         """Upgrade wanted events avoiding duplicates.
