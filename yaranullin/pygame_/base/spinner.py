@@ -16,6 +16,7 @@
 
 
 import pygame
+import pygame.locals as PL
 
 from ...event_system import Event
 from ...spinner import CPUSpinner
@@ -30,12 +31,14 @@ class PygameCPUSpinner(CPUSpinner):
     def run(self):
         self.keep_going = True
         pygame.init()
+        pygame.event.set_allowed(None)
+        pygame.event.set_allowed([PL.QUIT, PL.MOUSEMOTION, PL.MOUSEBUTTONUP,
+                                  PL.MOUSEBUTTONDOWN, PL.KEYDOWN, PL.KEYUP])
         try:
             while self.keep_going:
                 dt = self.clock.tick(30) / 1000.0
                 event = Event('tick', dt=dt)
                 self.event_manager.post(event)
-                pygame.event.clear()
         except KeyboardInterrupt:
             event = Event('quit')
             self.event_manager.post(event)
