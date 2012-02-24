@@ -87,4 +87,4 @@ class ClientNetworkSpinner(NetworkSpinner):
             if self.end_point is not None:
                 self.end_point.pull()
                 self.end_point.push()
-            sleep(0.1)
+            sleep(0.01)

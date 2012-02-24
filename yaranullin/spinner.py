@@ -15,8 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-import sys
-from time import sleep, time
+from time import sleep
 
 from event_system import Event, Listener
 
@@ -35,30 +34,10 @@ class CPUSpinner(Listener):
         self.keep_going = True
 
     def run(self):
-        """This is the main loop."""
-        state = 'waiting'
-        waiting_starts = int(time())
         try:
             while self.keep_going:
                 self.post(Event('tick'))
-                if state == 'waiting':
-                    sleep(0.1)
-                    if len(self.event_manager.event_queue):
-                        state == 'running'
-                    elif ((int(time()) - waiting_starts) > 10):
-                        # After a certain amount of time go to sleep.
-                        state == 'sleeping'
-                elif state == 'running':
-                    sleep(0.01)
-                    if not len(self.event_manager.event_queue):
-                        state == 'waiting'
-                        waiting_starts = int(time())
-                elif state == 'sleeping':
-                    sleep(0.5)
-                    if len(self.event_manager.event_queue):
-                        state == 'running'
-                else:
-                    sys.exit('Unknown spinner state.')  # Log something as well.
+                sleep(0.01)
         except KeyboardInterrupt:
             self.post(Event('quit'))
             self.post(Event('tick'))

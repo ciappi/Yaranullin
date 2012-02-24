@@ -65,7 +65,7 @@ class ServerEndPoint(BaseRequestHandler, EndPoint):
             while self.keep_going:
                 self.pull()
                 self.push()
-                sleep(0.1)
+                sleep(0.01)
         except EOFError:
             pass
 
