@@ -20,6 +20,7 @@ from weakref import WeakValueDictionary
 from base.containers import ScrollableContainer
 from pawn import Pawn
 from ..config import CONFIG
+from ..event_system import Event
 
 
 class Board(ScrollableContainer):
@@ -30,6 +31,7 @@ class Board(ScrollableContainer):
                  rect=None):
         ScrollableContainer.__init__(self, event_manager, rect)
         self.board_id = board_id
+        self.active_pawn_id = None
         self.name = name
         self.width = width
         self.height = height
@@ -47,6 +49,7 @@ class Board(ScrollableContainer):
                 if ((x + y) % 2 == 0):
                     surf.blit(white_cell, (tw * x, tw * y))
         self.image = surf
+        self._image = self.image.copy()
 
     def handle_game_event_pawn_new(self, ev_type, **kargs):
         """Handle the creation of a new Pawn view."""
@@ -72,3 +75,17 @@ class Board(ScrollableContainer):
         """Handle ticks if the board is active."""
         if self.active:
             ScrollableContainer.handle_tick(self, ev_type, dt)
+
+    def handle_game_event_pawn_next(self, ev_type, pawn_id):
+        if self.active:
+            self.active_pawn_id = pawn_id
+
+    def handle_mouse_click_single_left(self, ev_type, pos):
+        if self.active and self.abs_rect.collidepoint(pos):
+            # Find the hitted cell
+            pos = pos[0] - self.abs_rect.left, pos[1] - self.abs_rect.top
+            pos = pos[0] - self.view[0], pos[1] - self.view[1]
+            x, y = pos[0] // self.tw, pos[1] // self.tw
+            event = Event('game-request-pawn-place',
+                          pawn_id=self.active_pawn_id, x=x, y=y, rotate=False)
+            self.post(event)

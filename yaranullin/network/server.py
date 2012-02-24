@@ -31,6 +31,7 @@ class ServerNetworkView(NetworkView):
 
     handle_game_event_update = NetworkView.add_to_out_queue
     handle_game_event_pawn_next = NetworkView.add_to_out_queue
+    handle_game_event_pawn_updated = NetworkView.add_to_out_queue
     handle_game_event_board_change = NetworkView.add_to_out_queue
 
 

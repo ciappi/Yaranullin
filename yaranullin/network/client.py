@@ -37,6 +37,7 @@ class ClientNetworkView(NetworkView):
     """
 
     handle_game_request_pawn_move = NetworkView.add_to_out_queue
+    handle_game_request_pawn_place = NetworkView.add_to_out_queue
     handle_game_request_pawn_next = NetworkView.add_to_out_queue
     handle_game_request_update = NetworkView.add_to_out_queue
 

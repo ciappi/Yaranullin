@@ -16,7 +16,7 @@
 
 
 import threading
-import sys
+#import sys
 
 from event_system import EventManager, Event
 from pygame_.gui import SimpleGUI
@@ -101,7 +101,8 @@ def main(args):
         print 'Launching a client...'
         runner = ClientRunner(args)
     if runner:
-        try:
-            runner.run()
-        except:
-            sys.exit('Unexpected error.')
+#        try:
+#            runner.run()
+#        except:
+#            sys.exit('Unexpected error.')
+        runner.run()

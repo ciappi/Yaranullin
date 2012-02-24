@@ -15,10 +15,12 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import pygame
+import pygame.locals as PL
 
 from base.event_manager import PygameGUI
 from board import Board
 from hud import HUD
+from ..event_system import Event
 
 
 class SimpleGUI(PygameGUI):
@@ -52,3 +54,7 @@ class SimpleGUI(PygameGUI):
         del self.boards[board_id]
         self.huds[board_id].clear()
         del self.huds[board_id]
+
+    def handle_key_down(self, ev_type, key, mod, unicode):
+        if key == PL.K_SPACE:
+            self.post(Event('game-request-pawn-next'))
