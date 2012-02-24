@@ -15,6 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
+from time import sleep
 from SocketServer import ThreadingTCPServer, BaseRequestHandler
 
 from base import EndPoint, NetworkView, NetworkController, NetworkSpinner
@@ -63,6 +64,7 @@ class ServerEndPoint(BaseRequestHandler, EndPoint):
             while self.keep_going:
                 self.pull()
                 self.push()
+                sleep(0.1)
         except EOFError:
             pass
 
