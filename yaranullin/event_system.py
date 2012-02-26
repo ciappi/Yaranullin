@@ -57,17 +57,20 @@ class EventManager(object):
         self.events = dict()
         # Global event queue, thread safe thanks to deque.
         self.event_queue = deque()
+        # Used ids.
+        self.free_ids = set(LISTENER_IDS_POOL)
 
-    def get_free_id(self):
-        used_ids = set()
-        for listeners in self.events.values():
-            used_ids |= set([listener._uid for listener in listeners])
-        free_ids = list(LISTENER_IDS_POOL - used_ids)
-        if len(free_ids):
-            return choice(free_ids)
+    def get_new_id(self, new_id):
+        if new_id in self.free_ids:
+            sys.exit('Requested an id already used.')
+        if len(self.free_ids):
+            return choice(list(self.free_ids))
         else:
             sys.exit('Max number of listeners reached ('
                      + str(len(LISTENER_IDS_POOL)) + ')')
+
+    def set_new_id(self, new_id):
+        self.free_ids.remove(new_id)
 
     def attach_listener(self, listener, *wanted_events):
         """Register a Listener."""
@@ -150,7 +153,8 @@ class Listener(object):
     def __set_uid(self, new_uid):
         """Get a unique id."""
         if new_uid is None:
-            self._uid = self.event_manager.get_free_id()
+            self._uid = self.event_manager.get_new_id(new_uid)
+            self.event_manager.set_new_id(self._uid)
         else:
             self._uid = new_uid
 
@@ -196,9 +200,11 @@ class EventManagerAndListener(EventManager, Listener):
         Listener.__init__(self, event_manager)
         self.independent = independent
 
-    def get_free_id(self):
-        """Get a unique id."""
-        return self.event_manager.get_free_id()
+    def get_new_id(self, new_uid):
+        return self.event_manager.get_new_id(new_uid)
+
+    def set_new_id(self, new_uid):
+        self.event_manager.set_new_id(new_uid)
 
     def upgrade_wanted_events(self):
         """Upgrade wanted events avoiding duplicates.
