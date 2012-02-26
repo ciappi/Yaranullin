@@ -93,6 +93,10 @@ class ClientState(Listener):
             for pawn_id, pawn in board['pawns'].items():
                 events.append(Event('game-event-pawn-new', pawn_id=pawn_id,
                                     **pawn))
+            events.append(Event('game-event-pawn-next',
+                                pawn_id=board['active_pawn_id']))
+        events.append(Event('game-event-board-change',
+                            board_id=new_state['active_board_id']))
         return events
 
     def clear(self):
@@ -126,13 +130,19 @@ class ServerState(Listener):
 
     def load(self, new_state):
         events = []
-        for board in new_state['boards'].values():
+        for board_id, board in new_state['boards'].items():
             args = [(key, value) for key, value in board.items() if key not in
                     ('active_pawn_id', 'pawns')]
             kargs = dict(args)
-            events.append(Event('game-request-board-new', **kargs))
-            for pawn in board['pawns'].values():
-                events.append(Event('game-request-pawn-new', **pawn))
+            events.append(Event('game-request-board-new',
+                                board_id=board_id, **kargs))
+            for pawn_id, pawn in board['pawns'].items():
+                events.append(Event('game-request-pawn-new',
+                                    pawn_id=pawn_id, **pawn))
+            events.append(Event('game-request-pawn-next',
+                                pawn_id=board['active_pawn_id']))
+        events.append(Event('game-request-board-change',
+                            board_id=new_state['active_board_id']))
         return events
 
     def load_from_file(self, fname):

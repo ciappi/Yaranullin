@@ -58,9 +58,12 @@ class Board(EventManagerAndListener):
             self.initiatives.remove(pawn_to_del)
         return pawn_to_del
 
-    def next_pawn(self):
+    def next_pawn(self, pawn_id):
         """Set active_pawn to the next pawn according to initiative order."""
-        if len(self.initiatives):
+        if pawn_id is not None:
+            if pawn_id in self.pawns:
+                self.active_pawn = self.pawns[pawn_id]
+        elif len(self.initiatives):
             if self.active_pawn is None:
                 self.active_pawn = self.initiatives[0]
             else:
@@ -88,7 +91,8 @@ class Board(EventManagerAndListener):
             return
         new_pawn_id = self.add_pawn(**kargs)
         if new_pawn_id:
-            event = Event('game-event-pawn-new', pawn_id=new_pawn_id, **kargs)
+            kargs['pawn_id'] = new_pawn_id
+            event = Event('game-event-pawn-new', **kargs)
             self.post(event)
 
     def handle_game_request_pawn_del(self, ev_type, pawn_id):
@@ -101,10 +105,10 @@ class Board(EventManagerAndListener):
             event = Event('game-event-pawn-del', pawn_id=pawn_id)
             self.post(event)
 
-    def handle_game_request_pawn_next(self, ev_type):
+    def handle_game_request_pawn_next(self, ev_type, pawn_id=None):
         """Handle the request to change initiative."""
         if not self.active:
             return
-        pawn = self.next_pawn()
+        pawn = self.next_pawn(pawn_id)
         event = Event('game-event-pawn-next', pawn_id=pawn.pawn_id)
         self.post(event)

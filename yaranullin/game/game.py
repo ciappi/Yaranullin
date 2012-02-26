@@ -26,10 +26,10 @@ class Game(EventManagerAndListener):
         EventManagerAndListener.__init__(self, event_manager)
         self.boards = {}
 
-    def add_board(self, name, width, height):
+    def add_board(self, **kargs):
         """Create and add a new Board."""
-        new_board = Board(self, name, width, height)
-        new_board_id = id(new_board)
+        new_board = Board(self, **kargs)
+        new_board_id = new_board.uid
         self.boards[new_board_id] = new_board
         return new_board_id
 
@@ -46,7 +46,8 @@ class Game(EventManagerAndListener):
     def handle_game_request_board_new(self, ev_type, **kargs):
         """Handle a request for a new Board."""
         new_board_id = self.add_board(**kargs)
-        event = Event('game-event-board-new', board_id=new_board_id, **kargs)
+        kargs['board_id'] = new_board_id
+        event = Event('game-event-board-new', **kargs)
         self.post(event)
 
     def handle_game_request_board_del(self, ev_type, board_id):
