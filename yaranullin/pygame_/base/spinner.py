@@ -36,12 +36,9 @@ class PygameCPUSpinner(CPUSpinner):
                                   PL.MOUSEBUTTONDOWN, PL.KEYDOWN, PL.KEYUP])
         try:
             while self.keep_going:
-                dt = self.clock.tick(30) / 1000.0
+                dt = self.clock.tick(60) / 1000.0
                 event = Event('tick', dt=dt)
-                self.event_manager.post(event)
+                self.post(event)
         except KeyboardInterrupt:
-            event = Event('quit')
-            self.event_manager.post(event)
-            event = Event('tick')
-            self.event_manager.post(event)
+            self.post(Event('quit'), Event('tick'))
         pygame.quit()
