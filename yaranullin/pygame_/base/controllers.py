@@ -1,6 +1,6 @@
 # yaranullin/pygame_/base/controllers.py
 #
-# Copyright (c) 2011 Marco Scopesi <marco.scopesi@gmail.com>
+# Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -14,6 +14,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import sys
 
 import pygame
 import pygame.locals as PL
@@ -42,6 +43,7 @@ class PygameKeyboard(Listener):
 
 
 class PygameMouse(Listener):
+
     """Handle Pygame mouse events.
 
     Translate Pygame MOUSEMOTION, MOUSEBUTTONUP and MOUSEBUTTONDOWN into
@@ -49,78 +51,69 @@ class PygameMouse(Listener):
     automatically handled by pygame.
     """
 
-    def __init__(self, event_manager, *events):
-        Listener.__init__(self, event_manager, *events)
-        self.timeout = CONFIG.getint('pygame', 'mouse-click-delay')
-        # This is the state of the left button, used to check for a double
-        # click.
-        self.left_button = {'first_click_time': 0,
-                            'clicks_before_timeout': 0, 'pos': (0, 0)}
+    def __init__(self, event_manager):
+        Listener.__init__(self, event_manager)
+        self.state = 'idle'
+        self.timeout = CONFIG.getint('pygame', 'mouse-click-delay') / 1000.0
 
     def handle_tick(self, ev_type, dt):
-        lB = self.left_button
-        event = None
-        if lB['first_click_time']:
-            curr_time = pygame.time.get_ticks()
-            if ((curr_time - lB['first_click_time']) > self.timeout):
-                # We have to wait some amount of time before firing a single
-                # click event, otherwise we cannot check a double click.
-                if lB['clicks_before_timeout'] == 1:
-                    event = Event('mouse-click-single-left',
-                                  pos=lB['pos'])
-                # We must reset the state alter the timeout has elapsed.
-                lB['clicks_before_timeout'] = 0
-                lB['first_click_time'] = 0
-
+        events = []
+        if self.state == 'pressed':
+            self.t += dt
+            if self.t > self.timeout:
+                self.state = 'idle'
+        elif self.state == 'released':
+            self.t += dt
+            if self.t > self.timeout:
+                self.state = 'idle'
+                # fire single click
+                events.append(Event('mouse-click-single-left',
+                                    pos=self.pos))
         for pygame_event in pygame.event.get([PL.MOUSEMOTION,
                                              PL.MOUSEBUTTONUP,
                                              PL.MOUSEBUTTONDOWN]):
-            if pygame_event.type == PL.MOUSEBUTTONUP:
-                # Adds a click to the state and, it there are 2 clicks
-                # registered, fires a double click.
-                if pygame_event.button == 1:
-                    lB['clicks_before_timeout'] += 1
-                    if lB['clicks_before_timeout'] == 2:
-                        event = Event('mouse-click-double-left',
-                                      pos=lB['pos'])
-                        lB['clicks_before_timeout'] = 0
-                        lB['first_click_time'] = 0
-            elif pygame_event.type == PL.MOUSEBUTTONDOWN:
-                reset_left_button = True
-                if pygame_event.button == 1:
-                    reset_left_button = False
-                    # Save the time and the position of the first left click.
-                    if lB['clicks_before_timeout'] == 0:
-                        lB['first_click_time'] = pygame.time.get_ticks()
-                        lB['pos'] = pygame_event.pos
-                elif pygame_event.button == 3:
-                    event = Event('mouse-click-single-right',
-                                  pos=pygame_event.pos)
-                elif pygame_event.button == 4:
-                    event = Event('mouse-wheel-up', pos=pygame_event.pos)
-                elif pygame_event.button == 5:
-                    event = Event('mouse-wheel-down', pos=pygame_event.pos)
-                # If we push another button (not the left one), we must reset
-                # the state of the left button, like in every window manager.
-                if reset_left_button:
-                    lB['clicks_before_timeout'] = 0
-                    lB['first_click_time'] = 0
-            elif pygame_event.type == PL.MOUSEMOTION:
-                # Moving the mouse should reset the state of the left button
-                # as well.
-                lB['clicks_before_timeout'] = 0
-                lB['first_click_time'] = 0
-                if pygame_event.buttons == (False, False, False):
-                    event = Event('mouse-motion', pos=pygame_event.pos,
-                                  rel=pygame_event.rel)
-                # If needed it is very simple to add another event for a
-                # mouse drag with another button (or more than one) pressed.
-                elif pygame_event.buttons == (True, False, False):
-                    event = Event('mouse-drag-left', pos=pygame_event.pos,
-                                  rel=pygame_event.rel)
-
-        if event:
-            self.event_manager.post(event)
+            if self.state == 'idle':
+                if pygame_event.type == PL.MOUSEBUTTONDOWN:
+                    if pygame_event.button == 1:
+                        self.state = 'pressed'
+                        self.t = 0
+                        self.pos = pygame_event.pos
+                elif pygame_event.type == PL.MOUSEMOTION:
+                    if pygame_event.buttons == (True, False, False):
+                        self.state = 'drag'
+                    elif pygame_event.buttons == (False, False, False):
+                        events.append(Event('mouse-motion',
+                                            pos=pygame_event.pos,
+                                            rel=pygame_event.rel))
+            elif self.state == 'pressed':
+                if pygame_event.type == PL.MOUSEBUTTONUP:
+                    if pygame_event.button == 1:
+                        self.state = 'released'
+                elif pygame_event.type == PL.MOUSEMOTION:
+                    self.state = 'idle'
+            elif self.state == 'released':
+                if pygame_event.type == PL.MOUSEBUTTONUP:
+                    if pygame_event.button == 1:
+                        self.state = 'idle'
+                        # fire double click
+                        events.append(Event('mouse-click-double-left',
+                                            pos=pygame_event.pos))
+                elif pygame_event.type == PL.MOUSEMOTION:
+                    self.state = 'idle'
+            elif self.state == 'drag':
+                if pygame_event.type == PL.MOUSEBUTTONUP:
+                    if pygame_event.button == 1:
+                        self.state = 'idle'  # fire mouse drop event
+                        events.append(Event('mouse-drop-left',
+                                            pos=pygame_event.pos))
+                else:
+                    events.append(Event('mouse-drag-left',
+                                        pos=pygame_event.pos,
+                                        rel=pygame_event.rel))
+            else:
+                sys.exit('Unknown mouse button state')
+        if events:
+            self.post(*events)
 
 
 class PygameSystem(Listener):
