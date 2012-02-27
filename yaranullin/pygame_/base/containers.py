@@ -151,7 +151,8 @@ class ScrollableContainer(Container):
             new_pos = self.view
             xp = (new_pos[0] - self.position[0]) / dt
             yp = (new_pos[1] - self.position[1]) / dt
-            self.velocity = xp, yp
+            if (xp, yp) != (0, 0):
+                self.velocity = xp, yp
         # Limit the position.
         high = (0, 0)
         low = (min(0, self.rect.width - self.image.get_width()),

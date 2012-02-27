@@ -101,15 +101,15 @@ class PygameMouse(Listener):
                 elif pygame_event.type == PL.MOUSEMOTION:
                     self.state = 'idle'
             elif self.state == 'drag':
-                if pygame_event.type == PL.MOUSEBUTTONUP:
-                    if pygame_event.button == 1:
-                        self.state = 'idle'  # fire mouse drop event
-                        events.append(Event('mouse-drop-left',
-                                            pos=pygame_event.pos))
-                else:
+                if (pygame_event.type == PL.MOUSEMOTION and
+                        pygame_event.buttons == (True, False, False)):
                     events.append(Event('mouse-drag-left',
                                         pos=pygame_event.pos,
                                         rel=pygame_event.rel))
+                else:
+                    self.state = 'idle'  # fire mouse drop event
+                    events.append(Event('mouse-drop-left',
+                                        pos=pygame_event.pos))
             else:
                 sys.exit('Unknown mouse button state')
         if events:
