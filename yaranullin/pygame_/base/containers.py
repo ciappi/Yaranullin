@@ -17,6 +17,7 @@
 
 import pygame
 
+from utils import sign, saturation
 from ...event_system import EventManagerAndListener
 
 
@@ -122,16 +123,49 @@ class HContainer(OrderedContainer):
 
 class ScrollableContainer(Container):
 
+    def __init__(self, main_window, rect=None):
+        Container.__init__(self, main_window, rect)
+        self.dragging = False
+        self.position = (0, 0)
+        self.velocity = (0, 0)
+        self.deceleration = 2000
+
+    def update(self, dt):
+        """Animation sample."""
+        if self.dragging == False:
+            # Constant deceleration.
+            d = (-abs(self.deceleration) * sign(self.velocity[0]),
+                 -abs(self.deceleration) * sign(self.velocity[1]))
+            xp = self.velocity[0] + d[0] * dt
+            yp = self.velocity[1] + d[1] * dt
+            x = self.position[0] + self.velocity[0] * dt
+            y = self.position[1] + self.velocity[1] * dt
+            # Put velocity to zero if necessary.
+            if sign(xp) != sign(self.velocity[0]):
+                xp = 0
+            if sign(yp) != sign(self.velocity[1]):
+                yp = 0
+            self.velocity = xp, yp
+            new_pos = x, y
+        else:
+            new_pos = self.view
+            xp = (new_pos[0] - self.position[0]) / dt
+            yp = (new_pos[1] - self.position[1]) / dt
+            self.velocity = xp, yp
+        # Limit the position.
+        high = (0, 0)
+        low = (min(0, self.rect.width - self.image.get_width()),
+               min(0, self.rect.height - self.image.get_height()))
+        x = saturation(new_pos[0], low=low[0], high=high[0])
+        y = saturation(new_pos[1], low=low[1], high=high[1])
+        self.view = int(x), int(y)
+        self.position = x, y
+
     def handle_mouse_drag_left(self, ev_type, rel, pos):
         if self.abs_rect.collidepoint(pos):
-            # Limit the scrolling to the size of the board.
-            x = min(self.view[0] + rel[0], 0)
-            y = min(self.view[1] + rel[1], 0)
-            x = max(x, self.rect.width - self.image.get_width())
-            y = max(y, self.rect.height - self.image.get_height())
-            # Limit the scrolling if the image is smaller than the screen.
-            if (self.rect.width - self.image.get_width()) > 0:
-                x = 0
-            if (self.rect.height - self.image.get_height()) > 0:
-                y = 0
-            self.view = x, y
+            self.dragging = True
+            self.view = self.view[0] + rel[0], self.view[1] + rel[1]
+
+    def handle_mouse_drop_left(self, ev_type, pos):
+        if self.abs_rect.collidepoint(pos):
+            self.dragging = False
