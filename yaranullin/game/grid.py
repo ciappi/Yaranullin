@@ -101,7 +101,6 @@ class Grid(object):
         assert(height >= 1)
         cells = []
         x2, y2 = x1 + width - 1, y1 + height - 1
-        self.validate_position(x1, y1, x2, y2)
         for pos, cell in self._cells.items():
             if (x1 <= pos[0] <= x2) and (y1 <= pos[1] <= y2):
                 cells.append(cell)
@@ -125,12 +124,16 @@ class Grid(object):
         ok = self.is_free(x1, y1, width, height, c)
         if ok:
             self.del_content(c)
-            self.set_cells(x1, y1, width, height, c)
-            c.x, c.y, c.width, c.height = x1, y1, width, height
+            try:
+                self.set_cells(x1, y1, width, height, c)
+            except IndexOutOfGrid:
+                ok = False
+                self.set_cells(c.x, c.y, c.width, c.height, c)
+            else:
+                c.x, c.y, c.width, c.height = x1, y1, width, height
         return ok
 
     def del_content(self, content):
         """Remove the content from the Cells."""
         c = content
         self.del_cells(c.x, c.y, c.width, c.height)
-        c.x, c.y, c.width, c.height = -1, -1, 1, 1
