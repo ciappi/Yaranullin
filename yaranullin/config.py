@@ -21,7 +21,7 @@ import sys
 import ConfigParser
 
 # Global version.
-__version__ = '0.1.0dev'
+__version__ = '0.1.0'
 
 HOME_DIR = os.environ['HOME']
 YR_DIR = os.path.join(HOME_DIR, '.yaranullin')
