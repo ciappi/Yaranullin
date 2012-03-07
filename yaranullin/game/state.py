@@ -35,11 +35,13 @@ def _load(state_elem, xml_elem):
             value = eval(value) if value in ('False', 'True') else value
         state_elem[key] = value
     for sub_elem in xml_elem.getchildren():
-        tag = sub_elem.tag
-        prefix = 'id_'
-        if tag.startswith(prefix):
-            tag = int(tag[len(prefix):])
-        state_elem[tag] = _load({}, sub_elem)
+        key = sub_elem.tag
+        if 'uid' in sub_elem.attrib:
+            if key not in state_elem:
+                state_elem[key] = []
+            state_elem[key].append(_load({}, sub_elem))
+        else:
+            state_elem[key] = _load({}, sub_elem)
     return state_elem
 
 
@@ -50,13 +52,15 @@ def load(xml_state):
 
 def _dump(xml_elem, state_elem):
     """Recursive convertion of a state dict to an xml document."""
+    print state_elem
     for key, value in state_elem.items():
         if isinstance(value, dict):
-            # XML do not allow tag starting with a number
-            if isinstance(key, int):
-                key = 'id_' + str(key)
             sub_elem = Element(key)
             xml_elem.append(_dump(sub_elem, value))
+        elif isinstance(value, list):
+            for elem in value:
+                sub_elem = Element(key)
+                xml_elem.append(_dump(sub_elem, elem))
         else:
             xml_elem.set(key, str(value))
     return xml_elem
