@@ -46,13 +46,13 @@ class Game(EventManagerAndListener):
     def handle_game_request_board_new(self, ev_type, **kargs):
         """Handle a request for a new Board."""
         new_board_id = self.add_board(**kargs)
-        kargs['board_id'] = new_board_id
+        kargs['uid'] = new_board_id
         event = Event('game-event-board-new', **kargs)
         self.post(event)
 
-    def handle_game_request_board_del(self, ev_type, board_id):
+    def handle_game_request_board_del(self, ev_type, uid):
         """Handle the deletion of a Board."""
-        board_to_del = self.del_board(board_id)
+        board_to_del = self.del_board(uid)
         if board_to_del is not None:
-            event = Event('game-event-board-del', board_id=board_id)
+            event = Event('game-event-board-del', uid=uid)
             self.post(event)

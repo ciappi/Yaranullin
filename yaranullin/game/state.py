@@ -20,61 +20,10 @@
 import zipfile
 import logging
 import os
-from xml.etree.ElementTree import Element, tostring, XML
+import json
 
 from ..event_system import Listener, Event
 from ..config import YR_SAVE_DIR
-
-
-def _load(state_elem, xml_elem):
-    """Recursive loading of an xml state to a state dict."""
-    for key, value in xml_elem.attrib.items():
-        try:
-            value = int(value)
-        except ValueError:
-            value = eval(value) if value in ('False', 'True') else value
-        state_elem[key] = value
-    for sub_elem in xml_elem.getchildren():
-        key = sub_elem.tag
-        if 'uid' in sub_elem.attrib:
-            if key not in state_elem:
-                state_elem[key] = []
-            state_elem[key].append(_load({}, sub_elem))
-        else:
-            state_elem[key] = _load({}, sub_elem)
-    return state_elem
-
-
-def load(xml_state):
-    """Return a state dict given the state as xml."""
-    return _load({}, xml_state)
-
-
-def _dump(xml_elem, state_elem):
-    """Recursive convertion of a state dict to an xml document."""
-    print state_elem
-    for key, value in state_elem.items():
-        if isinstance(value, dict):
-            sub_elem = Element(key)
-            xml_elem.append(_dump(sub_elem, value))
-        elif isinstance(value, list):
-            for elem in value:
-                sub_elem = Element(key)
-                xml_elem.append(_dump(sub_elem, elem))
-        else:
-            xml_elem.set(key, str(value))
-    return xml_elem
-
-
-def dump(state):
-    """Return the xml representation of a state.
-
-    The state is a dict and each of its keys can be a dict (will be
-    converted into a child element), an int or string (converted to an
-    attribute).
-
-    """
-    return _dump(Element('yaranullin'), state)
 
 
 class ClientState(Listener):
@@ -83,32 +32,29 @@ class ClientState(Listener):
         Listener.__init__(self, event_manager)
         self.state = {}
 
-    def handle_game_event_update(self, ev_type, xml):
-        self.update_state(load(XML(xml)))
+    def handle_game_event_update(self, ev_type, state):
+        self.update_state(state)
 
     def load(self, new_state):
         events = []
-        for board_id, board in new_state['boards'].items():
-            args = [(key, value) for key, value in board.items() if key not in
-                    ('active_pawn_id', 'pawns')]
-            kargs = dict(args)
-            events.append(Event('game-event-board-new', board_id=board_id,
-                                **kargs))
-            for pawn_id, pawn in board['pawns'].items():
-                events.append(Event('game-event-pawn-new', pawn_id=pawn_id,
-                                    **pawn))
-            events.append(Event('game-event-pawn-next',
-                                pawn_id=board['active_pawn_id']))
+        boards = new_state['boards']
+        for board in boards:
+            pawns = board.pop('pawns')
+            active_pawn_uid = board.pop('active_pawn_uid')
+            events.append(Event('game-event-board-new', **board))
+            for pawn in pawns:
+                events.append(Event('game-event-pawn-new', **pawn))
+            events.append(Event('game-event-pawn-next', uid=active_pawn_uid))
         events.append(Event('game-event-board-change',
-                            board_id=new_state['active_board_id']))
+                            uid=new_state['active_board_uid']))
         return events
 
     def clear(self):
         events = []
         if 'boards' in self.state:
-            for key in self.state['boards']:
-                if isinstance(key, int):
-                    events.append(Event('game-event-board-del', board_id=key))
+            boards = self.state['boards']['board']
+            for board in boards:
+                events.append(Event('game-event-board-del', uid=board['uid']))
         return events
 
     def update_state(self, new_state):
@@ -131,83 +77,88 @@ class ServerState(Listener):
         self.save_dir = YR_SAVE_DIR
         self.clean_exit = False
         self.state = {}
+        self.uids = {}
 
     def load(self, new_state):
         events = []
-        for board_id, board in new_state['boards'].items():
-            args = [(key, value) for key, value in board.items() if key not in
-                    ('active_pawn_id', 'pawns')]
-            kargs = dict(args)
-            events.append(Event('game-request-board-new',
-                                board_id=board_id, **kargs))
-            for pawn_id, pawn in board['pawns'].items():
-                events.append(Event('game-request-pawn-new',
-                                    pawn_id=pawn_id, **pawn))
-            events.append(Event('game-request-pawn-next',
-                                pawn_id=board['active_pawn_id']))
+        boards = new_state['boards']
+        for board in boards:
+            pawns = board.pop('pawns')
+            active_pawn_uid = board.pop('active_pawn_uid')
+            events.append(Event('game-request-board-new', **board))
+            for pawn in pawns:
+                events.append(Event('game-request-pawn-new', **pawn))
+            events.append(Event('game-request-pawn-next', uid=active_pawn_uid))
         events.append(Event('game-request-board-change',
-                            board_id=new_state['active_board_id']))
+                            uid=new_state['active_board_uid']))
         return events
 
     def load_from_file(self, fname):
         fname = os.path.join(self.save_dir, fname)
         try:
             with zipfile.ZipFile(fname, 'r') as yrn_file:
-                data = yrn_file.read('main.xml')
+                data = yrn_file.read('main.json')
         except (zipfile.BadZipfile, KeyError, IOError):
             logging.error('Invalid file name ' + fname)
         else:
-            new_state = load(XML(data))
+            new_state = json.loads(data)
             events = self.load(new_state)
             self.post(*events)
 
-    def save(self):
-        xml_state = dump(self.state)
-        return tostring(xml_state, encoding='utf-8')
-
     def save_to_file(self, fname):
-        data = self.save()
+        data = json.dumps(self.state, indent=2)
         fname = os.path.join(self.save_dir, fname + '.yrn')
         with zipfile.ZipFile(fname, mode='w') as zf:
-            zf.writestr('main.xml', data)
+            zf.writestr('main.json', data)
 
     def handle_game_load(self, ev_type, fname):
         self.load_from_file(fname)
 
     def handle_game_request_update(self, ev_type):
-        event = Event('game-event-update', xml=self.save())
+        event = Event('game-event-update', state=self.state)
         self.post(event)
 
-    def handle_game_event_board_change(self, ev_type, board_id):
-        self.state['active_board_id'] = board_id
+    def handle_game_event_board_change(self, ev_type, uid):
+        self.state['active_board_uid'] = uid
 
-    def handle_game_event_board_new(self, ev_type, board_id, **kargs):
+    def handle_game_event_board_new(self, ev_type, **kargs):
         if 'boards' not in self.state:
-            self.state['boards'] = {}
-        self.state['boards'][board_id] = kargs
-        self.state['boards'][board_id]['pawns'] = {}
-        self.state['active_board_id'] = board_id
+            self.state['boards'] = []
+        board = kargs
+        self.state['boards'].append(board)
+        self.state['active_board_uid'] = board['uid']
+        self.uids[board['uid']] = board
 
-    def handle_game_event_board_del(self, ev_type, board_id):
-        del self.state['boards'][board_id]
+    def handle_game_event_board_del(self, ev_type, uid):
+        boards = self.state['boards']
+        if uid in self.uids:
+            board = self.uids[uid]
+            boards.remove(board)
+            del self.uids[uid]
 
-    def handle_game_event_pawn_next(self, ev_type, pawn_id):
-        board_id = self.state['active_board_id']
-        self.state['boards'][board_id]['active_pawn_id'] = pawn_id
+    def handle_game_event_pawn_next(self, ev_type, uid):
+        board = self.uids[self.state['active_board_uid']]
+        board['active_pawn_uid'] = uid
 
-    def handle_game_event_pawn_new(self, ev_type, pawn_id, **kargs):
-        board_id = self.state['active_board_id']
-        if 'pawns' not in self.state['boards'][board_id]:
-            self.state['boards'][board_id]['pawns'] = {}
-        self.state['boards'][board_id]['pawns'][pawn_id] = kargs
+    def handle_game_event_pawn_new(self, ev_type, **kargs):
+        board = self.uids[self.state['active_board_uid']]
+        if 'pawns' not in board:
+            board['pawns'] = []
+        pawns = board['pawns']
+        pawn = kargs
+        pawns.append(pawn)
+        self.uids[pawn['uid']] = pawn
 
-    def handle_game_event_pawn_updated(self, ev_type, pawn_id, **kargs):
-        board_id = self.state['active_board_id']
-        self.state['boards'][board_id]['pawns'][pawn_id].update(**kargs)
+    def handle_game_event_pawn_updated(self, ev_type, uid, **kargs):
+        pawn = self.uids[uid]
+        pawn.update(kargs)
 
-    def handle_game_event_pawn_del(self, ev_type, pawn_id):
-        board_id = self.state['active_board_id']
-        del self.state['boards'][board_id]['pawns'][pawn_id]
+    def handle_game_event_pawn_del(self, ev_type, uid):
+        board = self.uids[self.state['active_board_uid']]
+        pawn = self.uids[uid]
+        del self.uids[uid]
+        pawns = board['pawns']
+        pawns.remove(pawn)
 
     def handle_quit(self, event):
         self.clean_exit = True

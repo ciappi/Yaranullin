@@ -27,11 +27,11 @@ class Board(ScrollableContainer):
 
     """The view of a Board."""
 
-    def __init__(self, event_manager, board_id, name, width, height,
-                 rect=None):
+    def __init__(self, event_manager, uid, name, width, height, rect=None,
+                 tiles=None):
         ScrollableContainer.__init__(self, event_manager, rect)
-        self.board_id = board_id
-        self.active_pawn_id = None
+        self.uid = uid
+        self.active_pawn_uid = None
         self.name = name
         self.width = width
         self.height = height
@@ -56,17 +56,17 @@ class Board(ScrollableContainer):
         if not self.active:
             return
         new_pawn = Pawn(self, **kargs)
-        self.pawns[kargs['pawn_id']] = new_pawn
+        self.pawns[kargs['uid']] = new_pawn
         self.append(new_pawn)
 
-    def handle_game_event_pawn_del(self, ev_type, pawn_id):
+    def handle_game_event_pawn_del(self, ev_type, uid):
         """Handle the deletion of a Pawn."""
         if not self.active:
             return
-        self.remove(self.pawns[pawn_id])
+        self.remove(self.pawns[uid])
 
-    def handle_game_event_board_change(self, ev_type, board_id):
-        if self.board_id == board_id:
+    def handle_game_event_board_change(self, ev_type, uid):
+        if self.uid == uid:
             self.active = True
         else:
             self.active = False
@@ -76,9 +76,9 @@ class Board(ScrollableContainer):
         if self.active:
             ScrollableContainer.handle_tick(self, ev_type, dt)
 
-    def handle_game_event_pawn_next(self, ev_type, pawn_id):
+    def handle_game_event_pawn_next(self, ev_type, uid):
         if self.active:
-            self.active_pawn_id = pawn_id
+            self.active_pawn_uid = uid
 
     def handle_mouse_click_single_left(self, ev_type, pos):
         if self.active and self.abs_rect.collidepoint(pos):
@@ -87,5 +87,5 @@ class Board(ScrollableContainer):
             pos = pos[0] - self.view[0], pos[1] - self.view[1]
             x, y = pos[0] // self.tw, pos[1] // self.tw
             event = Event('game-request-pawn-place',
-                          pawn_id=self.active_pawn_id, x=x, y=y, rotate=False)
+                          uid=self.active_pawn_uid, x=x, y=y, rotate=False)
             self.post(event)
