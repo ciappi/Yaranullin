@@ -96,7 +96,7 @@ class NetworkView(Listener):
             #data = dumps(event, default=encode)
             data = {'ev_type': ev_type}
             data.update(kargs)
-            self.end_point.out_buffer.append(msgpack.packs(data))
+            self.end_point.out_buffer.append(msgpack.dumps(data))
 
 
 class NetworkController(Listener):

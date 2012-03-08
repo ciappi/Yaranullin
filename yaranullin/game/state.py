@@ -17,10 +17,10 @@
 """State of the game."""
 
 
-import zipfile
 import logging
 import os
 import json
+import bz2
 
 from ..event_system import Listener, Event
 from ..config import YR_SAVE_DIR
@@ -75,9 +75,11 @@ class ServerState(Listener):
     def __init__(self, event_manager):
         Listener.__init__(self, event_manager)
         self.save_dir = YR_SAVE_DIR
+        self.game_dir = None
         self.clean_exit = False
         self.state = {}
         self.uids = {}
+        self.cache = []
 
     def load(self, new_state):
         events = []
@@ -93,23 +95,41 @@ class ServerState(Listener):
                             uid=new_state['active_board_uid']))
         return events
 
-    def load_from_file(self, fname):
-        fname = os.path.join(self.save_dir, fname)
+    def load_from_file(self, dir_name):
+        self.game_dir = os.path.join(YR_SAVE_DIR, dir_name)
         try:
-            with zipfile.ZipFile(fname, 'r') as yrn_file:
-                data = yrn_file.read('main.json')
-        except (zipfile.BadZipfile, KeyError, IOError):
-            logging.error('Invalid file name ' + fname)
+            with open(os.path.join(self.game_dir, 'main.json'), 'r') as main:
+                data = main.read()
+        except IOError:
+            logging.error('Error loading ' + self.game_dir)
         else:
             new_state = json.loads(data)
             events = self.load(new_state)
             self.post(*events)
 
-    def save_to_file(self, fname):
-        data = json.dumps(self.state, indent=2)
-        fname = os.path.join(self.save_dir, fname + '.yrn')
-        with zipfile.ZipFile(fname, mode='w') as zf:
-            zf.writestr('main.json', data)
+    def save_to_file(self):
+        data = json.dumps(self.state, indent=2, sort_keys=True)
+        fname = os.path.join(self.game_dir, 'main.json')
+        with open(fname, mode='w') as main:
+            main.write(data)
+
+    def handle_texture_request(self, name):
+        fname = os.path.join(self.game_dir, 'textures', name)
+        event = None
+        if name in self.cache:
+            data = self.cache[name]
+            event = Event('texture-update', name=name, data=data)
+        else:
+            try:
+                with open(fname, 'rb') as f:
+                    data = bz2.compress(f.read())
+                event = Event('texture-update', name=name, data=data)
+                # For now alpha is always False
+                self.cache[name] = data
+            except IOError:
+                logging.error('Error loading image ' + fname)
+        if event:
+            self.post(event)
 
     def handle_game_load(self, ev_type, fname):
         self.load_from_file(fname)
@@ -163,17 +183,17 @@ class ServerState(Listener):
     def handle_quit(self, event):
         self.clean_exit = True
 
-    def handle_game_save(self, ev_type, fname):
-        self.save_to_file(fname)
+    def handle_game_save(self, ev_type):
+        self.save_to_file()
 
-    def __del__(self):
-        """Dumps the game state in 'restore.yrn'.
-
-        This should save the game state in the likely event of a failure of
-        Yaranullin. This function is called when the instance of XMLDump is
-        garbage collected. It won't save a restore file if the cause of the
-        exit is a quit event.
-        """
-
-        if not self.clean_exit:
-            self.save_to_file('restore')
+#    def __del__(self):
+#        """Dumps the game state in 'restore.yrn'.
+#
+#        This should save the game state in the likely event of a failure of
+#        Yaranullin. This function is called when the instance of XMLDump is
+#        garbage collected. It won't save a restore file if the cause of the
+#        exit is a quit event.
+#        """
+#
+#        if not self.clean_exit:
+#            self.save_to_file('restore')
