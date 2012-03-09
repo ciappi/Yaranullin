@@ -28,9 +28,6 @@ class PawnToken(TextLabel):
 
     def __init__(self, event_manager, uid, name, initiative, color=None,
                  **kargs):
-        self.uid = uid
-        self.name = name
-        self.initiative = initiative
         if color is None:
             n_colors = len(COLORS)
             color_index = len(event_manager.pawns) % n_colors
@@ -38,6 +35,9 @@ class PawnToken(TextLabel):
             color = pygame.colordict.THECOLORS[color]
         TextLabel.__init__(self, event_manager, text=name, font_color=color,
                            font_size=20, font_name='hud_font.ttf')
+        self.uid = uid
+        self.name = name
+        self.initiative = initiative
 
     def handle_game_event_pawn_next(self, ev_type, uid):
         if self.uid == uid:

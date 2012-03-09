@@ -152,11 +152,12 @@ class Listener(object):
 
     def __set_uid(self, new_uid):
         """Get a unique id."""
-        if new_uid is None:
-            self._uid = self.event_manager.get_new_id(new_uid)
-            self.event_manager.set_new_id(self._uid)
-        else:
-            self._uid = new_uid
+        if self._uid is None:
+            if new_uid is None:
+                self._uid = self.event_manager.get_new_id(new_uid)
+                self.event_manager.set_new_id(self._uid)
+            else:
+                self._uid = new_uid
 
     def __get_uid(self):
         return self._uid
