@@ -31,6 +31,7 @@ if not os.path.exists(YR_DIR):
     YR_DIR = os.path.join(this_dir, 'data')
 # Define resources and saves folders.
 YR_RES_DIR = os.path.join(YR_DIR, 'resources')
+YR_CACHE_DIR = os.path.join(YR_RES_DIR, 'cache')
 YR_SAVE_DIR = os.path.join(YR_DIR, 'saves')
 # Installed config file.
 MAIN_CONFIG_FILE = os.path.join(sys.prefix, 'share', 'yaranullin',

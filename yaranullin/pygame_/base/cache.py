@@ -21,7 +21,7 @@ import bz2
 import pygame
 
 from ...event_system import Listener, Event
-from ...config import YR_RES_DIR
+from ...config import YR_CACHE_DIR
 
 
 class Cache(Listener):
@@ -35,7 +35,7 @@ class Cache(Listener):
             return self._cache[name]
         else:
             try:
-                fname = os.path.join(YR_RES_DIR, name)
+                fname = os.path.join(YR_CACHE_DIR, name)
                 surf = pygame.image.load(fname)
                 surf = surf.convert()
                 self._cache[name] = surf
@@ -46,7 +46,7 @@ class Cache(Listener):
                 self._cache[name] = None
 
     def handle_texture_update(self, ev_type, name, data):
-        fname = os.path.join(YR_RES_DIR, name)
+        fname = os.path.join(YR_CACHE_DIR, name)
         with open(fname, 'w+b') as f:
             f.write(bz2.decompress(data))
         try:
