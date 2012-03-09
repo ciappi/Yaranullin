@@ -18,7 +18,6 @@ import pygame
 from weakref import WeakValueDictionary
 
 from base.containers import ScrollableContainer
-#from base.cache import CachedProperty
 from pawn import Pawn
 from ..config import CONFIG
 from ..event_system import Event
@@ -48,23 +47,23 @@ class Board(ScrollableContainer):
 
     def init_background(self, tiles):
         self.tiles = {}
-        self.blitted = {}
+        self.to_blit = {}
         for tile in tiles:
             x, y = tile['x'], tile['y']
             self.tiles[x, y] = tile['image']
-            self.blitted[x, y] = False
+            self.to_blit[x, y] = True
 
     def draw(self):
-        for (x, y), tile in self.tiles.items():
-            if self.blitted[x, y]:
-                continue
+        cells = ((x, y) for (x, y) in self.to_blit if self.to_blit[x, y])
+        for x, y in cells:
+            tile = self.tiles[x, y]
             pos = self.tw * x, self.tw * y
             texture = self.cache.get(tile)
             size = self.tw, self.tw
             if texture:
                 texture = pygame.transform.scale(texture, size)
                 self.image.blit(texture, pos)
-                self.blitted[x, y] = True
+                self.to_blit[x, y] = True
                 self._image = self.image.copy()
         ScrollableContainer.draw(self)
 

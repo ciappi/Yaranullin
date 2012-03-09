@@ -55,22 +55,3 @@ class Cache(Listener):
             self._cache[name] = surf
         except pygame.error:
             logging.error('Error loading a texture.')
-
-
-class CachedProperty(object):
-
-    def __init__(self, default=None):
-        self.name = None
-        self.default = default
-
-    def __get__(self, instance, owner):
-        if self.name is not None:
-            value = instance.cache.get(self.name)
-            if value is not None:
-                return value
-            else:
-                return self.default
-
-    def __set__(self, instance, value):
-        if value is not None:
-            self.name = value
