@@ -55,16 +55,19 @@ class Board(ScrollableContainer):
 
     def draw(self):
         cells = ((x, y) for (x, y) in self.to_blit if self.to_blit[x, y])
+        dirty = False
         for x, y in cells:
             tile = self.tiles[x, y]
             pos = self.tw * x, self.tw * y
             texture = self.cache.get(tile)
             size = self.tw, self.tw
             if texture:
-                texture = pygame.transform.scale(texture, size)
-                self.image.blit(texture, pos)
-                self.to_blit[x, y] = True
-                self._image = self.image.copy()
+                dirty = True
+                texture = pygame.transform.smoothscale(texture, size)
+                self._image.blit(texture, pos)
+                self.to_blit[x, y] = False
+        if dirty:
+            self.image = self._image.copy()
         ScrollableContainer.draw(self)
 
     def handle_game_event_pawn_new(self, ev_type, **kargs):
