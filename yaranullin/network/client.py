@@ -40,6 +40,7 @@ class ClientNetworkView(NetworkView):
     handle_game_request_pawn_place = NetworkView.add_to_out_queue
     handle_game_request_pawn_next = NetworkView.add_to_out_queue
     handle_game_request_update = NetworkView.add_to_out_queue
+    handle_texture_request = NetworkView.add_to_out_queue
 
 
 class ClientEndPoint(EndPoint):

@@ -18,6 +18,7 @@ import pygame
 from weakref import WeakValueDictionary
 
 from base.containers import ScrollableContainer
+#from base.cache import CachedProperty
 from pawn import Pawn
 from ..config import CONFIG
 from ..event_system import Event
@@ -30,6 +31,7 @@ class Board(ScrollableContainer):
     def __init__(self, event_manager, uid, name, width, height, rect=None,
                  tiles=None):
         ScrollableContainer.__init__(self, event_manager, rect)
+#        print tiles
         self.uid = uid
         self.active_pawn_uid = None
         self.name = name
@@ -38,18 +40,33 @@ class Board(ScrollableContainer):
         self.active = True
         self.pawns = WeakValueDictionary()
         self.tw = CONFIG.getint('graphics', 'tile-width')
-        # Draw a simple squared background.
-        tw = self.tw
-        surf = pygame.surface.Surface((tw * self.width,
-                                       tw * self.height)).convert()
-        white_cell = pygame.surface.Surface((tw, tw)).convert()
-        white_cell.fill((255, 255, 255))
-        for x in xrange(self.width):
-            for y in xrange(self.height):
-                if ((x + y) % 2 == 0):
-                    surf.blit(white_cell, (tw * x, tw * y))
+        surf = pygame.surface.Surface((self.tw * self.width,
+                                       self.tw * self.height)).convert()
         self.image = surf
         self._image = self.image.copy()
+        self.init_background(tiles)
+
+    def init_background(self, tiles):
+        self.tiles = {}
+        self.blitted = {}
+        for tile in tiles:
+            x, y = tile['x'], tile['y']
+            self.tiles[x, y] = tile['image']
+            self.blitted[x, y] = False
+
+    def draw(self):
+        for (x, y), tile in self.tiles.items():
+            if self.blitted[x, y]:
+                continue
+            pos = self.tw * x, self.tw * y
+            texture = self.cache.get(tile)
+            size = self.tw, self.tw
+            if texture:
+                texture = pygame.transform.scale(texture, size)
+                self.image.blit(texture, pos)
+                self.blitted[x, y] = True
+                self._image = self.image.copy()
+        ScrollableContainer.draw(self)
 
     def handle_game_event_pawn_new(self, ev_type, **kargs):
         """Handle the creation of a new Pawn view."""

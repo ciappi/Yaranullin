@@ -20,39 +20,48 @@
       "tiles": [
         {
           "image": "white_tile.png", 
-          "uid": 0
+          "x": 0,
+          "y": 0
         }, 
         {
           "image": "black_tile.png", 
-          "uid": 1
+          "x": 1,
+          "y": 0
         }, 
         {
           "image": "white_tile.png", 
-          "uid": 2
+          "x": 2,
+          "y": 0
         }, 
         {
           "image": "black_tile.png", 
-          "uid": 3
+          "x": 0,
+          "y": 1
         }, 
         {
           "image": "white_tile.png", 
-          "uid": 4
+          "x": 1,
+          "y": 1
         }, 
         {
           "image": "black_tile.png", 
-          "uid": 5
+          "x": 2,
+          "y": 1
         }, 
         {
           "image": "white_tile.png", 
-          "uid": 6
+          "x": 0,
+          "y": 2
         }, 
         {
           "image": "black_tile.png", 
-          "uid": 7
+          "x": 1,
+          "y": 2
         }, 
         {
           "image": "white_tile.png", 
-          "uid": 8
+          "x": 2,
+          "y": 2
         }
       ], 
       "uid": 1234, 

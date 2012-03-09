@@ -79,7 +79,7 @@ class ServerState(Listener):
         self.clean_exit = False
         self.state = {}
         self.uids = {}
-        self.cache = []
+        self.cache = {}
 
     def load(self, new_state):
         events = []
@@ -113,7 +113,7 @@ class ServerState(Listener):
         with open(fname, mode='w') as main:
             main.write(data)
 
-    def handle_texture_request(self, name):
+    def handle_texture_request(self, ev_type, name):
         fname = os.path.join(self.game_dir, 'textures', name)
         event = None
         if name in self.cache:

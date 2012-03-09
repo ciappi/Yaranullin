@@ -41,7 +41,9 @@ class Cache(Listener):
                 self._cache[name] = surf
                 return surf
             except pygame.error:
+                print 'requesting an image'
                 self.post(Event('texture-request', name=name))
+                self._cache[name] = None
 
     def handle_texture_update(self, ev_type, name, data):
         fname = os.path.join(YR_RES_DIR, name)

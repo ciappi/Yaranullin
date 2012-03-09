@@ -18,6 +18,7 @@ import pygame
 #import pygame.locals as PL
 
 from controllers import PygameKeyboard, PygameMouse, PygameSystem
+from cache import Cache
 from ...event_system import EventManagerAndListener
 
 
@@ -35,6 +36,7 @@ class PygameGUI(EventManagerAndListener):
         self.keyboard_controller = PygameKeyboard(self)
         self.mouse_controller = PygameMouse(self)
         self.system_controller = PygameSystem(self)
+        self.cache = Cache(self)
         pygame.display.set_mode((0, 0))  # , PL.FULLSCREEN)
 
     @property
