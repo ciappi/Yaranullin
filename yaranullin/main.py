@@ -50,7 +50,7 @@ class ServerRunner(object):
         self.game = Game(self.main_event_manager)
         self.state = ServerState(self.game)
         if args.game:
-            event = Event('game-load', fname=args.game)
+            event = Event('game-load', dname=args.game)
             self.main_event_manager.post(event)
 
     def run(self):

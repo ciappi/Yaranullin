@@ -95,7 +95,7 @@ class ServerState(Listener):
                             uid=new_state['active_board_uid']))
         return events
 
-    def load_from_file(self, dir_name):
+    def load_from_dir(self, dir_name):
         self.game_dir = os.path.join(YR_SAVE_DIR, dir_name)
         try:
             with open(os.path.join(self.game_dir, 'main.json'), 'r') as main:
@@ -131,8 +131,8 @@ class ServerState(Listener):
         if event:
             self.post(event)
 
-    def handle_game_load(self, ev_type, fname):
-        self.load_from_file(fname)
+    def handle_game_load(self, ev_type, dname):
+        self.load_from_dir(dname)
 
     def handle_game_request_update(self, ev_type):
         event = Event('game-event-update', state=self.state)
