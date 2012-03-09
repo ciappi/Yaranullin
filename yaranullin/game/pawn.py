@@ -23,29 +23,28 @@ class Pawn(CellContent):
     """A PG, an NPG or a monster."""
 
     def __init__(self, board, name, initiative, x, y, width, height,
-                 rotated, pawn_id=None):
+                 rotated, uid=None):
         CellContent.__init__(self, board, x, y, width, height, rotated)
         self.name = name
         self.initiative = initiative
-        self.uid = pawn_id
-        self.pawn_id = self.uid
+        self.uid = uid
 
-    def handle_game_request_pawn_move(self, ev_type, pawn_id, dx, dy, rotate):
+    def handle_game_request_pawn_move(self, ev_type, uid, dx, dy, rotate):
         """Try to move the Pawn."""
-        if pawn_id != self.pawn_id:
+        if self.uid != uid:
             return
         moved = self.move(dx, dy, rotate)
         if moved:
             event = Event('game-event-pawn-updated', x=self.x, y=self.y,
-                          rotated=self.rotated, pawn_id=pawn_id)
+                          rotated=self.rotated, uid=uid)
             self.post(event)
 
-    def handle_game_request_pawn_place(self, ev_type, pawn_id, x, y, rotate):
+    def handle_game_request_pawn_place(self, ev_type, uid, x, y, rotate):
         """Try to place the Pawn."""
-        if pawn_id != self.pawn_id:
+        if self.uid != uid:
             return
         placed = self.place(x, y, rotate)
         if placed:
             event = Event('game-event-pawn-updated', x=self.x, y=self.y,
-                          rotated=self.rotated, pawn_id=pawn_id)
+                          rotated=self.rotated, uid=uid)
             self.post(event)

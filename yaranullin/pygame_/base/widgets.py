@@ -39,6 +39,10 @@ class Widget(Listener, pygame.sprite.Sprite):
         self.image = pygame.surface.Surface((self.rect.size)).convert()
 
     @property
+    def cache(self):
+        return self.event_manager.cache
+
+    @property
     def abs_pos(self):
         rx, ry = self.event_manager.abs_pos
         x, y = self.rect.topleft

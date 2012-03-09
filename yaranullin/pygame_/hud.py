@@ -26,11 +26,8 @@ class PawnToken(TextLabel):
 
     """A simple text label with the name of a pawn."""
 
-    def __init__(self, event_manager, pawn_id, name, initiative, color=None,
+    def __init__(self, event_manager, uid, name, initiative, color=None,
                  **kargs):
-        self.pawn_id = pawn_id
-        self.name = name
-        self.initiative = initiative
         if color is None:
             n_colors = len(COLORS)
             color_index = len(event_manager.pawns) % n_colors
@@ -38,9 +35,12 @@ class PawnToken(TextLabel):
             color = pygame.colordict.THECOLORS[color]
         TextLabel.__init__(self, event_manager, text=name, font_color=color,
                            font_size=20, font_name='hud_font.ttf')
+        self.uid = uid
+        self.name = name
+        self.initiative = initiative
 
-    def handle_game_event_pawn_next(self, ev_type, pawn_id):
-        if self.pawn_id == pawn_id:
+    def handle_game_event_pawn_next(self, ev_type, uid):
+        if self.uid == uid:
             self.font.set_underline(True)
             self.font.set_italic(True)
         else:
@@ -57,26 +57,26 @@ class HUD(VContainer):
 
     """
 
-    def __init__(self, event_manager, board_id, rect):
+    def __init__(self, event_manager, uid, rect):
         VContainer.__init__(self, event_manager, rect)
-        self.board_id = board_id
+        self.uid = uid
         self.active = True
         self.pawns = {}
 
     def handle_game_event_pawn_new(self, ev_type, **kargs):
         """Handle a new pawn."""
         new_pawn_token = PawnToken(self, **kargs)
-        self.pawns[kargs['pawn_id']] = new_pawn_token
+        self.pawns[kargs['uid']] = new_pawn_token
         self.append(new_pawn_token)
         self.sort(key=lambda pawn: pawn.initiative, reverse=True)
 
-    def handle_game_event_pawn_del(self, ev_type, pawn_id):
+    def handle_game_event_pawn_del(self, ev_type, uid):
         """Handle pawn deletion."""
-        pawn_to_del = self.pawns.pop(pawn_id)
+        pawn_to_del = self.pawns.pop(uid)
         self.remove(pawn_to_del)
 
-    def handle_game_event_board_change(self, ev_type, board_id):
-        if self.board_id == board_id:
+    def handle_game_event_board_change(self, ev_type, uid):
+        if self.uid == uid:
             self.active = True
         else:
             self.active = False
