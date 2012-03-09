@@ -23,8 +23,8 @@ import msgpack
 from collections import deque
 
 #from utils import encode, decode
-from ..event_system import Listener, Event
-from ..spinner import CPUSpinner
+from yaranullin.event_system import Listener, Event
+from yaranullin.spinner import CPUSpinner
 
 
 format = struct.Struct('!I')  # for messages up to 2**32 - 1 in length

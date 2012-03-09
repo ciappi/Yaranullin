@@ -20,8 +20,8 @@ import bz2
 
 import pygame
 
-from ...event_system import Listener, Event
-from ...config import YR_CACHE_DIR
+from yaranullin.event_system import Listener, Event
+from yaranullin.config import YR_CACHE_DIR
 
 
 class Cache(Listener):

@@ -15,7 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 from cell_content import CellContent
-from ..event_system import Event
+from yaranullin.event_system import Event
 
 
 class Pawn(CellContent):

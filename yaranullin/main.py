@@ -15,17 +15,17 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
+import sys
 import threading
-#import sys
 
+from config import CONFIG
 from event_system import EventManager, Event
-from pygame_.gui import SimpleGUI
-from pygame_.base.spinner import PygameCPUSpinner
 from game.game import Game
 from game.state import ServerState, ClientState
+from pygame_.gui import SimpleGUI
+from pygame_.base.spinner import PygameCPUSpinner
 from network.server import ServerNetworkSpinner
 from network.client import ClientNetworkSpinner
-from config import CONFIG
 
 
 class ServerRunner(object):
@@ -101,8 +101,10 @@ def main(args):
         print 'Launching a client...'
         runner = ClientRunner(args)
     if runner:
-#        try:
-#            runner.run()
-#        except:
-#            sys.exit('Unexpected error.')
-        runner.run()
+        if args.debug:
+            runner.run()
+        else:
+            try:
+                runner.run()
+            except:
+                sys.exit('Unexpected error.')

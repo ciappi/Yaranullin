@@ -19,8 +19,8 @@ from weakref import WeakValueDictionary
 
 from base.containers import ScrollableContainer
 from pawn import Pawn
-from ..config import CONFIG
-from ..event_system import Event
+from yaranullin.config import CONFIG
+from yaranullin.event_system import Event
 
 
 class Board(ScrollableContainer):

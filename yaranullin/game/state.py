@@ -17,13 +17,13 @@
 """State of the game."""
 
 
-import logging
 import os
 import json
 import bz2
+import logging
 
-from ..event_system import Listener, Event
-from ..config import YR_SAVE_DIR
+from yaranullin.event_system import Listener, Event
+from yaranullin.config import YR_SAVE_DIR
 
 
 class ClientState(Listener):

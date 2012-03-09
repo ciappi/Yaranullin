@@ -19,8 +19,8 @@ import sys
 import pygame
 import pygame.locals as PL
 
-from ...event_system import Event, Listener
-from ...config import CONFIG
+from yaranullin.config import CONFIG
+from yaranullin.event_system import Event, Listener
 
 
 class PygameKeyboard(Listener):

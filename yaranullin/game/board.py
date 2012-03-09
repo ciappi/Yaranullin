@@ -17,7 +17,7 @@
 from grid import Grid
 from pawn import Pawn
 from cell_content import CellContentInitializationError
-from ..event_system import EventManagerAndListener, Event
+from yaranullin.event_system import EventManagerAndListener, Event
 
 
 class Board(EventManagerAndListener):

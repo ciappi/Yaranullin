@@ -20,7 +20,7 @@ import pygame.locals as PL
 from base.event_manager import PygameGUI
 from board import Board
 from hud import HUD
-from ..event_system import Event
+from yaranullin.event_system import Event
 
 
 class SimpleGUI(PygameGUI):

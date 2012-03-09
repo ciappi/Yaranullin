@@ -17,7 +17,7 @@
 import pygame
 
 from base.widgets import Widget
-from ..config import CONFIG, COLORS
+from yaranullin.config import CONFIG, COLORS
 
 
 class Pawn(Widget):

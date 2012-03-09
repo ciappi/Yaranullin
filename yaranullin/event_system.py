@@ -16,8 +16,8 @@
 
 """The event system of Yaranullin."""
 
-import logging
 import sys
+import logging
 
 from random import choice
 from weakref import proxy

@@ -19,7 +19,7 @@ from time import sleep
 from SocketServer import ThreadingTCPServer, BaseRequestHandler
 
 from base import EndPoint, NetworkView, NetworkController, NetworkSpinner
-from ..spinner import CPUSpinner
+from yaranullin.spinner import CPUSpinner
 
 
 class ServerNetworkController(NetworkController):

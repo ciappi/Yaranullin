@@ -15,7 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 from board import Board
-from ..event_system import EventManagerAndListener, Event
+from yaranullin.event_system import EventManagerAndListener, Event
 
 
 class Game(EventManagerAndListener):

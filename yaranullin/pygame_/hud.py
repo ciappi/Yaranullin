@@ -19,7 +19,7 @@ import pygame
 from base.widgets import TextLabel
 from base.containers import VContainer
 
-from ..config import COLORS
+from yaranullin.config import COLORS
 
 
 class PawnToken(TextLabel):

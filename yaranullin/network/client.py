@@ -19,7 +19,7 @@ import socket
 from time import sleep
 
 from base import EndPoint, NetworkView, NetworkController, NetworkSpinner
-from ..event_system import Event
+from yaranullin.event_system import Event
 
 
 class ClientNetworkController(NetworkController):
