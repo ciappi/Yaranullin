@@ -44,12 +44,20 @@ class Event(object):
 
 
 class EventManager(object):
+
     """Broadcast events to registered listeners.
 
     Every listener will choose event types to get at creation time.
-    There is just one EventManager at runtime.
+    There is just one EventManager at runtime (a singleton).
 
     """
+
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = object.__new__(cls, *args, **kwargs)
+        return cls._instance
 
     def __init__(self):
         # Couple event types to listeners that want them.
