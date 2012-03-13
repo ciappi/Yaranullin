@@ -2,6 +2,7 @@
 Independent BSON codec for Python that doesn't depend on MongoDB.
 
 Only the following types are supported:
+
 * 0x01: "double",
 * 0x02: "string",
 * 0x03: "document",
