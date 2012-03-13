@@ -1,0 +1,12 @@
+Source: bson-nomongodb
+Maintainer: Marco Scopesi <marco.scopesi@gmail.com>
+Section: python
+Priority: optional
+Build-Depends: python-all (>= 2.6.6-3), debhelper (>= 7)
+Standards-Version: 3.9.1
+
+Package: python-bson-nomongodb
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Description: BSON codec for Python
+ Independent BSON codec for Python that doesn't depend on MongoDB.
