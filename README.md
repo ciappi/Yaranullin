@@ -30,12 +30,14 @@ dicts in Python-speak.
 
 ## Installation
 If you want to try out the source package, you do this...
+
 ```bash
 $ ./setup.py build
 $ sudo ./setup.py install
 ```
 
 Or, you can simply do this instead...
+
 ```bash
 $ sudo easy_install bson
 ```
