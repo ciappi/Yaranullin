@@ -14,8 +14,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from board import Board
 from yaranullin.event_system import EventManagerAndListener, Event
+from yaranullin.game.board import Board
 
 
 class Game(EventManagerAndListener):

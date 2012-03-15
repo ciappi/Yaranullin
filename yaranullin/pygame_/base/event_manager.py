@@ -17,9 +17,10 @@
 import pygame
 #import pygame.locals as PL
 
-from cache import Cache
-from controllers import PygameKeyboard, PygameMouse, PygameSystem
+from yaranullin.cache import Cache
 from yaranullin.event_system import EventManagerAndListener
+from yaranullin.pygame_.base.controllers import PygameKeyboard, PygameMouse, PygameSystem
+
 
 
 class PygameGUI(EventManagerAndListener):

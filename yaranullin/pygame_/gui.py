@@ -17,10 +17,10 @@
 import pygame
 import pygame.locals as PL
 
-from base.event_manager import PygameGUI
-from board import Board
-from hud import HUD
 from yaranullin.event_system import Event
+from yaranullin.pygame_.board import Board
+from yaranullin.pygame_.hud import HUD
+from yaranullin.pygame_.base.event_manager import PygameGUI
 
 
 class SimpleGUI(PygameGUI):

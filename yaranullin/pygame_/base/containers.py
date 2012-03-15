@@ -17,8 +17,8 @@
 
 import pygame
 
-from utils import sign, saturation
 from yaranullin.event_system import EventManagerAndListener
+from yaranullin.pygame_.base.utils import sign, saturation
 
 
 class Container(EventManagerAndListener):

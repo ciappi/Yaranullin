@@ -17,10 +17,10 @@
 import pygame
 from weakref import WeakValueDictionary
 
-from base.containers import ScrollableContainer
-from pawn import Pawn
 from yaranullin.config import CONFIG
 from yaranullin.event_system import Event
+from yaranullin.pygame_.base.containers import ScrollableContainer
+from yaranullin.pygame_.pawn import Pawn
 
 
 class Board(ScrollableContainer):

@@ -18,14 +18,14 @@
 import sys
 import threading
 
-from config import CONFIG
-from event_system import EventManager, Event
-from game.game import Game
-from game.state import ServerState, ClientState
-from pygame_.gui import SimpleGUI
-from pygame_.base.spinner import PygameCPUSpinner
-from network.server import ServerNetworkSpinner
-from network.client import ClientNetworkSpinner
+from yaranullin.config import CONFIG
+from yaranullin.event_system import EventManager, Event
+from yaranullin.game.game import Game
+from yaranullin.game.state import ServerState, ClientState
+from yaranullin.pygame_.gui import SimpleGUI
+from yaranullin.pygame_.base.spinner import PygameCPUSpinner
+from yaranullin.network.server import ServerNetworkSpinner
+from yaranullin.network.client import ClientNetworkSpinner
 
 
 class ServerRunner(object):

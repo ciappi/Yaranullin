@@ -18,12 +18,11 @@
 from time import sleep
 from SocketServer import ThreadingTCPServer, BaseRequestHandler
 
-from base import EndPoint, NetworkView, NetworkController, NetworkSpinner
 from yaranullin.spinner import CPUSpinner
+from yaranullin.network.base import EndPoint, NetworkView, NetworkController, NetworkSpinner
 
 
 class ServerNetworkController(NetworkController):
-
     pass
 
 

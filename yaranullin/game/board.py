@@ -14,10 +14,10 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from grid import Grid
-from pawn import Pawn
-from cell_content import CellContentInitializationError
 from yaranullin.event_system import EventManagerAndListener, Event
+from yaranullin.game.grid import Grid
+from yaranullin.game.pawn import Pawn
+from yaranullin.game.cell_content import CellContentInitializationError
 
 
 class Board(EventManagerAndListener):
