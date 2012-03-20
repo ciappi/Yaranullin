@@ -32,7 +32,6 @@ class Board(ScrollableContainer, CacheMixIn):
                  tiles=None):
         ScrollableContainer.__init__(self, event_manager, rect)
         CacheMixIn.__init__(self)
-#        print tiles
         self.uid = uid
         self.active_pawn_uid = None
         self.name = name

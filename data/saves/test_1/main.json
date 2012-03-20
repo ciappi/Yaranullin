@@ -10,6 +10,7 @@
           "height": 1, 
           "initiative": 20, 
           "name": "Pawn 1", 
+          "image": "dwarf.png", 
           "rotated": false, 
           "uid": 4321, 
           "width": 1, 

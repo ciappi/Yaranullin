@@ -36,3 +36,7 @@ $ ./bin/yaranullin client --host 127.0.0.1
 ```
 
 You can change the host if the server is on another machine on the network.
+
+## Tokens
+
+All pawn images are taken from http://www.immortalnights.com/tokensite/tokenpacks.html
