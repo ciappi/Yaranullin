@@ -17,19 +17,21 @@
 import pygame
 from weakref import WeakValueDictionary
 
+from yaranullin.cache import CacheMixIn
 from yaranullin.config import CONFIG
 from yaranullin.event_system import Event
 from yaranullin.pygame_.base.containers import ScrollableContainer
 from yaranullin.pygame_.pawn import Pawn
 
 
-class Board(ScrollableContainer):
+class Board(ScrollableContainer, CacheMixIn):
 
     """The view of a Board."""
 
     def __init__(self, event_manager, uid, name, width, height, rect=None,
                  tiles=None):
         ScrollableContainer.__init__(self, event_manager, rect)
+        CacheMixIn.__init__(self)
 #        print tiles
         self.uid = uid
         self.active_pawn_uid = None
@@ -43,9 +45,6 @@ class Board(ScrollableContainer):
                                        self.tw * self.height)).convert()
         self.image = surf
         self._image = self.image.copy()
-        self.init_background(tiles)
-
-    def init_background(self, tiles):
         self.tiles = {}
         self.to_blit = {}
         for tile in tiles:
@@ -59,7 +58,7 @@ class Board(ScrollableContainer):
         for x, y in cells:
             tile = self.tiles[x, y]
             pos = self.tw * x, self.tw * y
-            texture = self.cache.get(tile)
+            texture = self.get_from_cache(tile, pygame.image.load)
             size = self.tw, self.tw
             if texture:
                 dirty = True

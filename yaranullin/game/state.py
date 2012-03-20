@@ -113,17 +113,17 @@ class ServerState(Listener):
         with open(fname, mode='w') as main:
             main.write(data)
 
-    def handle_texture_request(self, ev_type, name):
-        fname = os.path.join(self.game_dir, 'textures', name)
+    def handle_resource_request(self, ev_type, name):
+        fname = os.path.join(self.game_dir, 'resources', name)
         event = None
         if name in self.cache:
             data = self.cache[name]
-            event = Event('texture-update', name=name, data=data)
+            event = Event('resource-update', name=name, data=data)
         else:
             try:
                 with open(fname, 'rb') as f:
                     data = bz2.compress(f.read())
-                event = Event('texture-update', name=name, data=data)
+                event = Event('resource-update', name=name, data=data)
                 # For now alpha is always False
                 self.cache[name] = data
             except IOError:

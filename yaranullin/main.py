@@ -20,6 +20,7 @@ import threading
 
 from yaranullin.config import CONFIG
 from yaranullin.event_system import EventManager, Event
+from yaranullin.cache import Cache
 from yaranullin.game.game import Game
 from yaranullin.game.state import ServerState, ClientState
 from yaranullin.pygame_.gui import SimpleGUI
@@ -71,6 +72,7 @@ class ClientRunner(object):
         self.main_event_manager = EventManager()
         self.main_cpu_spinner = ClientNetworkSpinner(self.main_event_manager)
         self.mirror_state = ClientState(self.main_event_manager)
+        self.cache = Cache(self.main_event_manager)
         self.pygame_gui = SimpleGUI(self.main_event_manager)
         self.pygame_spinner = PygameCPUSpinner(self.pygame_gui)
         self.pygame_thread = threading.Thread(target=self.pygame_spinner.run)
