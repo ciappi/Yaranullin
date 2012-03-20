@@ -154,16 +154,26 @@ TODO: explain the event system.
 * *host*
 * *port*
 
-## Texture loading
+## Resource loading
 
-### texture-request
+### resource-request
 Request a resource from the server.
 
 * *name*: the file name of the resource
 
-### texture-update
+### resource-update
 Broadcast a resource, usually from the server.
 
 * *name*: the file name of the resource
 * *data*: the content of the file
 
+### cache-get
+Request a cached file handle.
+
+* *name*: the name of the file.
+
+### cache-send
+Send a cached file handle.
+
+* *name*: the name of the file.
+* *string_io*: the file as a StringIO object.
