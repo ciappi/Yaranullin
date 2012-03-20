@@ -35,9 +35,9 @@ setup(
 A piece of software that helps role players to track the position of their
 heroes when fighting against monsters and other scary things, such as
 skeletons and other derivatives.""",
-    packages=['yaranullin', 'yaranullin.game', 'yaranullin.gui',
-              'yaranullin.network', 'yaranullin.pygame'],
+    packages=['yaranullin', 'yaranullin.game', 'yaranullin.network',
+              'yaranullin.pygame_'],
     data_files=[(os.path.join('share', 'yaranullin'),
                [os.path.join('data', 'yaranullin.ini'), ])],
-    scripts=[os.path.join('bin', 'yaranullin')]
+    scripts=[os.path.join('bin', 'yrn')]
 )

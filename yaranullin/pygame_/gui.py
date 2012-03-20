@@ -17,10 +17,10 @@
 import pygame
 import pygame.locals as PL
 
-from base.event_manager import PygameGUI
-from board import Board
-from hud import HUD
-from ..event_system import Event
+from yaranullin.event_system import Event
+from yaranullin.pygame_.board import Board
+from yaranullin.pygame_.hud import HUD
+from yaranullin.pygame_.base.event_manager import PygameGUI
 
 
 class SimpleGUI(PygameGUI):
@@ -44,16 +44,16 @@ class SimpleGUI(PygameGUI):
 
     def handle_game_event_board_new(self, ev_type, **kargs):
         """Create a new board."""
-        new_board_id = kargs['board_id']
+        new_board_id = kargs['uid']
         self.boards[new_board_id] = Board(self, rect=self.frame_rect, **kargs)
         self.huds[new_board_id] = HUD(self, new_board_id, self.hud_rect)
 
-    def handle_game_event_board_del(self, ev_type, board_id):
+    def handle_game_event_board_del(self, ev_type, uid):
         """Delete a board."""
-        self.boards[board_id].pawns.clear()
-        del self.boards[board_id]
-        self.huds[board_id].clear()
-        del self.huds[board_id]
+        self.boards[uid].pawns.clear()
+        del self.boards[uid]
+        self.huds[uid].clear()
+        del self.huds[uid]
 
     def handle_key_down(self, ev_type, key, mod, unicode):
         if key == PL.K_SPACE:

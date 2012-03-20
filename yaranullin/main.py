@@ -15,17 +15,18 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-import threading
 import sys
+import threading
 
-from event_system import EventManager, Event
-from pygame_.gui import SimpleGUI
-from pygame_.base.spinner import PygameCPUSpinner
-from game.game import Game
-from game.state import ServerState, ClientState
-from network.server import ServerNetworkSpinner
-from network.client import ClientNetworkSpinner
-from config import CONFIG
+from yaranullin.config import CONFIG
+from yaranullin.event_system import EventManager, Event
+from yaranullin.cache import Cache
+from yaranullin.game.game import Game
+from yaranullin.game.state import ServerState, ClientState
+from yaranullin.pygame_.gui import SimpleGUI
+from yaranullin.pygame_.base.spinner import PygameCPUSpinner
+from yaranullin.network.server import ServerNetworkSpinner
+from yaranullin.network.client import ClientNetworkSpinner
 
 
 class ServerRunner(object):
@@ -50,7 +51,7 @@ class ServerRunner(object):
         self.game = Game(self.main_event_manager)
         self.state = ServerState(self.game)
         if args.game:
-            event = Event('game-load', fname=args.game)
+            event = Event('game-load', dname=args.game)
             self.main_event_manager.post(event)
 
     def run(self):
@@ -71,6 +72,7 @@ class ClientRunner(object):
         self.main_event_manager = EventManager()
         self.main_cpu_spinner = ClientNetworkSpinner(self.main_event_manager)
         self.mirror_state = ClientState(self.main_event_manager)
+        self.cache = Cache(self.main_event_manager)
         self.pygame_gui = SimpleGUI(self.main_event_manager)
         self.pygame_spinner = PygameCPUSpinner(self.pygame_gui)
         self.pygame_thread = threading.Thread(target=self.pygame_spinner.run)
@@ -101,8 +103,10 @@ def main(args):
         print 'Launching a client...'
         runner = ClientRunner(args)
     if runner:
-        try:
+        if args.debug:
             runner.run()
-        except:
-            sys.exit('Unexpected error.')
-#        runner.run()
+        else:
+            try:
+                runner.run()
+            except:
+                sys.exit('Unexpected error.')

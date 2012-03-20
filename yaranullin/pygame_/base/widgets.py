@@ -17,8 +17,8 @@
 import os
 import pygame
 
-from ...config import YR_RES_DIR
-from ...event_system import Listener
+from yaranullin.config import YR_RES_DIR
+from yaranullin.event_system import Listener
 
 
 class Widget(Listener, pygame.sprite.Sprite):

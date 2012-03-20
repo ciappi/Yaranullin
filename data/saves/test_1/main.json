@@ -1,0 +1,71 @@
+{
+  "active_board_uid": 1234, 
+  "boards": [
+    {
+      "active_pawn_uid": 4321, 
+      "height": 3, 
+      "name": "Test Board", 
+      "pawns": [
+        {
+          "height": 1, 
+          "initiative": 20, 
+          "name": "Pawn 1", 
+          "rotated": false, 
+          "uid": 4321, 
+          "width": 1, 
+          "x": 1, 
+          "y": 2
+        }
+      ], 
+      "tiles": [
+        {
+          "image": "white_tile.png", 
+          "x": 0,
+          "y": 0
+        }, 
+        {
+          "image": "black_tile.png", 
+          "x": 1,
+          "y": 0
+        }, 
+        {
+          "image": "white_tile.png", 
+          "x": 2,
+          "y": 0
+        }, 
+        {
+          "image": "black_tile.png", 
+          "x": 0,
+          "y": 1
+        }, 
+        {
+          "image": "white_tile.png", 
+          "x": 1,
+          "y": 1
+        }, 
+        {
+          "image": "black_tile.png", 
+          "x": 2,
+          "y": 1
+        }, 
+        {
+          "image": "white_tile.png", 
+          "x": 0,
+          "y": 2
+        }, 
+        {
+          "image": "black_tile.png", 
+          "x": 1,
+          "y": 2
+        }, 
+        {
+          "image": "white_tile.png", 
+          "x": 2,
+          "y": 2
+        }
+      ], 
+      "uid": 1234, 
+      "width": 3
+    }
+  ]
+}

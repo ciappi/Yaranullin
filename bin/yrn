@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# bin/yaranullin
+# bin/yrn
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -19,19 +19,18 @@
 
 import sys
 import os
-import imp
 import argparse
 import logging
 
+if __name__ == '__main__':
+    # main.py -> /foo/bar/yaranullin/main.py -> foo/bar
+    # cosi` "from yaranulling import foo" funziona
+    sys.path.insert(0, os.path.dirname(os.path.dirname(
+                    os.path.abspath(__file__))))
 
-try:
-    imp.find_module('yaranullin')
-except ImportError:
-    new_path = os.path.split(os.path.dirname(__file__))[0]
-    sys.path.append(new_path)
-finally:
-    from yaranullin.main import main
-    from yaranullin.config import __version__, LOG_FILE_CLIENT, LOG_FILE_SERVER, LOG_LEVEL
+from yaranullin.main import main
+from yaranullin.config import __version__, LOG_FILE_CLIENT, LOG_FILE_SERVER, \
+                              LOG_LEVEL
 
 
 def parse_args():
@@ -39,6 +38,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Launches Yaranullin.')
     parser.add_argument('mode', action="store", type=str,
                         help="The mode: for now just 'test'...")
+    parser.add_argument('--debug', action='store_true', default=False,
+                        help='Debug mode, prints traceback on error.')
     parser.add_argument('--game', action='store', type=str,
                         help='Specify a game to load.')
     parser.add_argument('--host', action='store', type=str,
@@ -69,4 +70,3 @@ if __name__ == '__main__':
     args = parse_args()
     init_logging(args.mode)
     main(args)
-

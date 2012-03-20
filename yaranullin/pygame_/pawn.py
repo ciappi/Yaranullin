@@ -16,17 +16,17 @@
 
 import pygame
 
-from base.widgets import Widget
-from ..config import CONFIG, COLORS
+from yaranullin.config import CONFIG, COLORS
+from yaranullin.pygame_.base.widgets import Widget
 
 
 class Pawn(Widget):
 
-    def __init__(self, event_manager, pawn_id, name, initiative, x, y, width,
+    def __init__(self, event_manager, uid, name, initiative, x, y, width,
                  height, rotated, color=None, image=None):
         Widget.__init__(self, event_manager)
         self.active = False
-        self.pawn_id = pawn_id
+        self.uid = uid
         self.name = name
         self.initiative = initiative
         self.x = x
@@ -62,16 +62,16 @@ class Pawn(Widget):
         self.rect.center = (self.x * self.tw + width * self.tw // 2,
                             self.y * self.tw + height * self.tw // 2)
 
-    def handle_game_event_pawn_next(self, ev_type, pawn_id):
+    def handle_game_event_pawn_next(self, ev_type, uid):
         """Handle a pawn change."""
-        if pawn_id == self.pawn_id:
+        if uid == self.uid:
             self.active = True
         else:
             self.active = False
 
-    def handle_game_event_pawn_updated(self, ev_type, pawn_id, **kargs):
+    def handle_game_event_pawn_updated(self, ev_type, uid, **kargs):
         """Move the pawns."""
-        if self.pawn_id != pawn_id:
+        if self.uid != uid:
             return
         self.__dict__.update(**kargs)
         self.update_rect()

@@ -18,12 +18,12 @@
 from time import sleep
 from SocketServer import ThreadingTCPServer, BaseRequestHandler
 
-from base import EndPoint, NetworkView, NetworkController, NetworkSpinner
-from ..spinner import CPUSpinner
+from yaranullin.spinner import CPUSpinner
+from yaranullin.network.base import EndPoint, NetworkView, NetworkController,\
+                                    NetworkSpinner
 
 
 class ServerNetworkController(NetworkController):
-
     pass
 
 
@@ -33,6 +33,7 @@ class ServerNetworkView(NetworkView):
     handle_game_event_pawn_next = NetworkView.add_to_out_queue
     handle_game_event_pawn_updated = NetworkView.add_to_out_queue
     handle_game_event_board_change = NetworkView.add_to_out_queue
+    handle_resource_update = NetworkView.add_to_out_queue
 
 
 class ServerEndPoint(BaseRequestHandler, EndPoint):

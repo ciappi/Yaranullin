@@ -14,20 +14,20 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from grid import Grid
-from pawn import Pawn
-from cell_content import CellContentInitializationError
-from ..event_system import EventManagerAndListener, Event
+from yaranullin.event_system import EventManagerAndListener, Event
+from yaranullin.game.grid import Grid
+from yaranullin.game.pawn import Pawn
+from yaranullin.game.cell_content import CellContentInitializationError
 
 
 class Board(EventManagerAndListener):
 
     """Board class, holds pawns and the grid."""
 
-    def __init__(self, game, name, width, height, board_id=None):
+    def __init__(self, game, name, width, height, uid=None, **kargs):
         EventManagerAndListener.__init__(self, game)
         self.grid = Grid(width, height)
-        self.uid = board_id
+        self.uid = uid
         self.board_id = self.uid
         self.pawns = {}
         self.initiatives = []
@@ -42,7 +42,7 @@ class Board(EventManagerAndListener):
         except CellContentInitializationError:
             new_pawn_id = None
         else:
-            new_pawn_id = new_pawn.pawn_id
+            new_pawn_id = new_pawn.uid
             self.pawns[new_pawn_id] = new_pawn
             self.initiatives.append(new_pawn)
             # Sort the initiatives list.
@@ -76,11 +76,11 @@ class Board(EventManagerAndListener):
             self.active_pawn = None
         return self.active_pawn
 
-    def handle_game_request_board_change(self, ev_type, board_id):
+    def handle_game_request_board_change(self, ev_type, uid):
         """Activate or deativate this Board."""
-        if board_id == self.board_id:
+        if uid == self.uid:
             self.active = True
-            event = Event('game-event-board-change', board_id=board_id)
+            event = Event('game-event-board-change', uid=uid)
             self.post(event)
         else:
             self.active = False
@@ -91,24 +91,24 @@ class Board(EventManagerAndListener):
             return
         new_pawn_id = self.add_pawn(**kargs)
         if new_pawn_id:
-            kargs['pawn_id'] = new_pawn_id
+            kargs['uid'] = new_pawn_id
             event = Event('game-event-pawn-new', **kargs)
             self.post(event)
 
-    def handle_game_request_pawn_del(self, ev_type, pawn_id):
+    def handle_game_request_pawn_del(self, ev_type, uid):
         """Handle the deletion of a Pawn."""
         if not self.active:
             return
-        pawn_to_del = self.del_pawn(pawn_id)
+        pawn_to_del = self.del_pawn(uid)
         if pawn_to_del is not None:
             self.grid.del_content(pawn_to_del)
-            event = Event('game-event-pawn-del', pawn_id=pawn_id)
+            event = Event('game-event-pawn-del', uid=uid)
             self.post(event)
 
-    def handle_game_request_pawn_next(self, ev_type, pawn_id=None):
+    def handle_game_request_pawn_next(self, ev_type, uid=None):
         """Handle the request to change initiative."""
         if not self.active:
             return
-        pawn = self.next_pawn(pawn_id)
-        event = Event('game-event-pawn-next', pawn_id=pawn.pawn_id)
+        pawn = self.next_pawn(uid)
+        event = Event('game-event-pawn-next', uid=pawn.uid)
         self.post(event)

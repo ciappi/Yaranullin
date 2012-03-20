@@ -19,13 +19,12 @@ import struct
 import socket
 import threading
 import logging
-import zlib
-from json import dumps, loads
+import msgpack
 from collections import deque
 
 #from utils import encode, decode
-from ..event_system import Listener, Event
-from ..spinner import CPUSpinner
+from yaranullin.event_system import Listener, Event
+from yaranullin.spinner import CPUSpinner
 
 
 format = struct.Struct('!I')  # for messages up to 2**32 - 1 in length
@@ -66,7 +65,7 @@ class EndPoint(object):
         while len(self.out_buffer):
             data = self.out_buffer.popleft()
             logging.debug('Pushing ' + repr(data) + ' to server.')
-            self.put(zlib.compress(data))
+            self.put(data)
 
     def get(self):
         """Get a single message from the socket.
@@ -75,7 +74,7 @@ class EndPoint(object):
         """
         lendata = self.recvall(format.size)
         (length,) = format.unpack(lendata)
-        data = zlib.decompress(self.recvall(length))
+        data = self.recvall(length)
         return data
 
     def put(self, message):
@@ -97,7 +96,7 @@ class NetworkView(Listener):
             #data = dumps(event, default=encode)
             data = {'ev_type': ev_type}
             data.update(kargs)
-            self.end_point.out_buffer.append(dumps(data))
+            self.end_point.out_buffer.append(msgpack.dumps(data))
 
 
 class NetworkController(Listener):
@@ -124,7 +123,7 @@ class NetworkController(Listener):
             while len(self.end_point.in_buffer):
                 data = self.end_point.in_buffer.popleft()
                 #event = loads(data, object_hook=decode)
-                event = Event(**loads(data))
+                event = Event(**msgpack.loads(data))
                 if self.check_event(event):
                     self.post(event)
 

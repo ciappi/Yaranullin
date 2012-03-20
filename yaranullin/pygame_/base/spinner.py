@@ -18,8 +18,8 @@
 import pygame
 import pygame.locals as PL
 
-from ...event_system import Event
-from ...spinner import CPUSpinner
+from yaranullin.event_system import Event
+from yaranullin.spinner import CPUSpinner
 
 
 class PygameCPUSpinner(CPUSpinner):

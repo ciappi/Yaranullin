@@ -18,12 +18,12 @@
 import socket
 from time import sleep
 
-from base import EndPoint, NetworkView, NetworkController, NetworkSpinner
-from ..event_system import Event
+from yaranullin.event_system import Event
+from yaranullin.network.base import EndPoint, NetworkView, NetworkController,\
+                                    NetworkSpinner
 
 
 class ClientNetworkController(NetworkController):
-
     pass
 
 
@@ -40,6 +40,7 @@ class ClientNetworkView(NetworkView):
     handle_game_request_pawn_place = NetworkView.add_to_out_queue
     handle_game_request_pawn_next = NetworkView.add_to_out_queue
     handle_game_request_update = NetworkView.add_to_out_queue
+    handle_resource_request = NetworkView.add_to_out_queue
 
 
 class ClientEndPoint(EndPoint):

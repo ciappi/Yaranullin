@@ -53,14 +53,15 @@ TODO: explain the event system.
 * *name*
 * *width*
 * *height*
+* *uid*
 
 ### game-request-board-del
 
-* *board_id*
+* *uid*
 
 ### game-request-board-change
 
-* *board_id*
+* *uid*
 
 ### game-request-pawn-new
 
@@ -70,28 +71,29 @@ TODO: explain the event system.
 * *y*
 * *width*
 * *height*
+* *uid*
 
 ### game-request-pawn-place
 
-* *pawn_id*
+* *uid*
 * *x*
 * *y*
 * *rotate*
 
 ### game-request-pawn-move
 
-* *pawn_id*
+* *uid*
 * *dx*
 * *dy*
 * *rotate*
 
 ### game-request-pawn-del
 
-* *pawn_id*
+* *uid*
 
 ### game-request-pawn-next
 
-* *pawn_id*: optional, if omitted returns the next pawn in initiative order.
+* *uid*: optional, if omitted returns the next pawn in initiative order.
 
 ## Events from the game model
 
@@ -100,15 +102,15 @@ TODO: explain the event system.
 * *name*
 * *width*
 * *height*
-* *board_id*
+* *uid*
 
 ### game-event-board-del
 
-* *board_id*
+* *uid*
 
 ### game-event-board-change
 
-* *board_id*
+* *uid*
 
 ### game-event-pawn-new
 
@@ -118,11 +120,11 @@ TODO: explain the event system.
 * *y*
 * *width*
 * *height*
-* *board_id*
+* *uid*
 
 ### game-event-pawn-moved
 
-* *board_id*
+* *uid*
 * *x*
 * *y*
 * *width*
@@ -130,21 +132,20 @@ TODO: explain the event system.
 
 ### game-event-pawn-del
 
-* *board_id*
+* *uid*
 
 ### game-event-pawn-next
 
-* *board_id*
+* *uid*
 
 ## Local I/O
 
 ### game-load
 
-* *fname*
+* *dname*
 
 ### game-save
 
-* *fname*
 
 ## Network I/O
 
@@ -153,24 +154,26 @@ TODO: explain the event system.
 * *host*
 * *port*
 
-## Resource handling
-
-### resource-get
-Request a resource with the given hash from the server.
-
-* *hash*: sha1 hash of the resource
-
-### resource-send
-Broadcast a resource, usually from the server.
-
-* *hash*: sha1 hash of the resource
-* *string*: the resource saved a
+## Resource loading
 
 ### resource-request
+Request a resource from the server.
 
-* *hash*
+* *name*: the file name of the resource
 
-### resource-event
+### resource-update
+Broadcast a resource, usually from the server.
 
-* *hash*
-* *image*
+* *name*: the file name of the resource
+* *data*: the content of the file
+
+### cache-get
+Request a cached file handle.
+
+* *name*: the name of the file.
+
+### cache-send
+Send a cached file handle.
+
+* *name*: the name of the file.
+* *string_io*: the file as a StringIO object.

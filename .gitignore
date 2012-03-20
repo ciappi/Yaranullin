@@ -6,6 +6,6 @@
 *.log
 dist/
 build/
-*.nja
-.ninjaproject/
 virtualenv/
+data/resources/cache
+MANIFEST

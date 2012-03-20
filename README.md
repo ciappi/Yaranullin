@@ -13,6 +13,7 @@ This is a list of all dependencies.
 
 * python >= 2.7
 * python-pygame >= 1.9.1
+* msgpack-python
 
 ## Server
 
@@ -20,10 +21,10 @@ To run a server for a Yaranullin game, open a terminal and type:
 
 ```bash
 $ cd /path/to/yaranullin/sources
-$ ./bin/yaranullin server --game test_1.yrn
+$ ./bin/yaranullin server --game test_1
 ```
 
-The loaded file (test_1.yrn in the above example) must be located inside '/path/to/yaranullin/sources/data/saves/'.
+The game to load (test_1 in the above example) should be a folder inside '/path/to/yaranullin/sources/data/saves/'.
 
 ## Client
 

@@ -16,7 +16,7 @@
 
 import logging
 
-from ..event_system import Listener
+from yaranullin.event_system import Listener
 
 
 class CellContentInitializationError(Exception):

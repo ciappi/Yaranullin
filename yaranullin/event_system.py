@@ -16,8 +16,8 @@
 
 """The event system of Yaranullin."""
 
-import logging
 import sys
+import logging
 
 from random import choice
 from weakref import proxy
@@ -44,10 +44,10 @@ class Event(object):
 
 
 class EventManager(object):
+
     """Broadcast events to registered listeners.
 
     Every listener will choose event types to get at creation time.
-    There is just one EventManager at runtime.
 
     """
 
@@ -60,17 +60,14 @@ class EventManager(object):
         # Used ids.
         self.free_ids = set(LISTENER_IDS_POOL)
 
-    def get_new_id(self, new_id):
-        if new_id in self.free_ids:
-            sys.exit('Requested an id already used.')
+    def get_new_uid(self):
         if len(self.free_ids):
-            return choice(list(self.free_ids))
+            new_uid = choice(list(self.free_ids))
+            self.free_ids.remove(new_uid)
+            return new_uid
         else:
             sys.exit('Max number of listeners reached ('
                      + str(len(LISTENER_IDS_POOL)) + ')')
-
-    def set_new_id(self, new_id):
-        self.free_ids.remove(new_id)
 
     def attach_listener(self, listener, *wanted_events):
         """Register a Listener."""
@@ -152,11 +149,11 @@ class Listener(object):
 
     def __set_uid(self, new_uid):
         """Get a unique id."""
-        if new_uid is None:
-            self._uid = self.event_manager.get_new_id(new_uid)
-            self.event_manager.set_new_id(self._uid)
-        else:
-            self._uid = new_uid
+        if self._uid is None:
+            if new_uid is None:
+                self._uid = self.event_manager.get_new_uid()
+            else:
+                self._uid = new_uid
 
     def __get_uid(self):
         return self._uid
@@ -200,11 +197,8 @@ class EventManagerAndListener(EventManager, Listener):
         Listener.__init__(self, event_manager)
         self.independent = independent
 
-    def get_new_id(self, new_uid):
-        return self.event_manager.get_new_id(new_uid)
-
-    def set_new_id(self, new_uid):
-        self.event_manager.set_new_id(new_uid)
+    def get_new_uid(self):
+        return self.event_manager.get_new_uid()
 
     def upgrade_wanted_events(self):
         """Upgrade wanted events avoiding duplicates.
