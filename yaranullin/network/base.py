@@ -19,7 +19,7 @@ import struct
 import socket
 import threading
 import logging
-import msgpack
+import bson
 from collections import deque
 
 #from utils import encode, decode
@@ -96,7 +96,7 @@ class NetworkView(Listener):
             #data = dumps(event, default=encode)
             data = {'ev_type': ev_type}
             data.update(kargs)
-            self.end_point.out_buffer.append(msgpack.dumps(data))
+            self.end_point.out_buffer.append(bson.dumps(data))
 
 
 class NetworkController(Listener):
@@ -123,7 +123,7 @@ class NetworkController(Listener):
             while len(self.end_point.in_buffer):
                 data = self.end_point.in_buffer.popleft()
                 #event = loads(data, object_hook=decode)
-                event = Event(**msgpack.loads(data))
+                event = Event(**bson.loads(data))
                 if self.check_event(event):
                     self.post(event)
 

@@ -13,7 +13,7 @@ This is a list of all dependencies.
 
 * python >= 2.7
 * python-pygame >= 1.9.1
-* msgpack-python
+* python-bson (included in the sources)
 
 ## Server
 
@@ -36,4 +36,3 @@ $ ./bin/yaranullin client --host 127.0.0.1
 ```
 
 You can change the host if the server is on another machine on the network.
-
