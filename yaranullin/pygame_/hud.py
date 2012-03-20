@@ -16,10 +16,10 @@
 
 import pygame
 
-from base.widgets import TextLabel
-from base.containers import VContainer
+from yaranullin.config import COLORS
 
-from ..config import COLORS
+from yaranullin.pygame_.base.widgets import TextLabel
+from yaranullin.pygame_.base.containers import VContainer
 
 
 class PawnToken(TextLabel):

@@ -17,8 +17,8 @@
 
 import pygame
 
-from utils import sign, saturation
-from ...event_system import EventManagerAndListener
+from yaranullin.event_system import EventManagerAndListener
+from yaranullin.pygame_.base.utils import sign, saturation
 
 
 class Container(EventManagerAndListener):
@@ -37,10 +37,6 @@ class Container(EventManagerAndListener):
             self.rect = rect
         self.image = pygame.surface.Surface((self.rect.size)).convert()
         self._image = self.image.copy()
-
-    @property
-    def cache(self):
-        return self.event_manager.cache
 
     @property
     def abs_pos(self):

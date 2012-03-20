@@ -20,6 +20,7 @@ import os
 import sys
 import ConfigParser
 
+
 # Global version.
 __version__ = '0.1.0'
 

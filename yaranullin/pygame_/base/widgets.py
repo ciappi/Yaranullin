@@ -17,8 +17,8 @@
 import os
 import pygame
 
-from ...config import YR_RES_DIR
-from ...event_system import Listener
+from yaranullin.config import YR_RES_DIR
+from yaranullin.event_system import Listener
 
 
 class Widget(Listener, pygame.sprite.Sprite):
@@ -37,10 +37,6 @@ class Widget(Listener, pygame.sprite.Sprite):
         else:
             self.rect = rect
         self.image = pygame.surface.Surface((self.rect.size)).convert()
-
-    @property
-    def cache(self):
-        return self.event_manager.cache
 
     @property
     def abs_pos(self):

@@ -17,7 +17,7 @@
 
 from time import sleep
 
-from event_system import Event, Listener
+from yaranullin.event_system import Event, Listener
 
 
 class CPUSpinner(Listener):
