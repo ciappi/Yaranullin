@@ -23,7 +23,7 @@ class Pawn(CellContent):
     """A PG, an NPG or a monster."""
 
     def __init__(self, board, name, initiative, x, y, width, height,
-                 rotated, uid=None):
+                 rotated, uid=None, **kargs):
         CellContent.__init__(self, board, x, y, width, height, rotated)
         self.name = name
         self.initiative = initiative

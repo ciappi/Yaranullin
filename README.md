@@ -13,7 +13,7 @@ This is a list of all dependencies.
 
 * python >= 2.7
 * python-pygame >= 1.9.1
-* msgpack-python
+* python-bson (included in the sources)
 
 ## Server
 
@@ -21,7 +21,7 @@ To run a server for a Yaranullin game, open a terminal and type:
 
 ```bash
 $ cd /path/to/yaranullin/sources
-$ ./bin/yaranullin server --game test_1
+$ ./bin/yrn server --game test_1
 ```
 
 The game to load (test_1 in the above example) should be a folder inside '/path/to/yaranullin/sources/data/saves/'.
@@ -32,8 +32,12 @@ To run a client for a Yaranullin game, open a terminal and type:
 
 ```bash
 $ cd /path/to/yaranullin/sources
-$ ./bin/yaranullin client --host 127.0.0.1
+$ ./bin/yrn client --host 127.0.0.1
 ```
 
 You can change the host if the server is on another machine on the network.
 
+## Images
+
+All pawn images are taken from http://www.immortalnights.com/tokensite/tokenpacks.html
+All tiles for the maps are taken from http://www.lostgarden.com/2006/02/250-free-handdrawn-textures.html

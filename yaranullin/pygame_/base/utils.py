@@ -14,6 +14,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import pygame
+
 
 def sign(x):
     if x > 0:
@@ -31,3 +33,20 @@ def saturation(x, low=None, high=None):
         return high
     else:
         return x
+
+
+def load_image(f, size, alpha=False):
+    surf = pygame.image.load(f)
+    surf_size = surf.get_size()
+    ratio = size[0] / float(surf_size[0]), size[1] / float(surf_size[1])
+    if ratio[0] <= ratio[1]:
+        ratio = ratio[0]
+    else:
+        ratio = ratio[1]
+    size = int(surf_size[0] * ratio), int(surf_size[0] * ratio)
+    surf = pygame.transform.smoothscale(surf, size)
+    if alpha:
+        surf = surf.convert_alpha()
+    else:
+        surf = surf.convert()
+    return surf

@@ -17,14 +17,24 @@
 import pygame
 
 from yaranullin.config import CONFIG, COLORS
+from yaranullin.cache import CacheMixIn
 from yaranullin.pygame_.base.widgets import Widget
+from yaranullin.pygame_.base.utils import load_image
 
 
-class Pawn(Widget):
+def load_image_with_alpha(size):
+    def loader(f):
+        return load_image(f, size, True)
+    return loader
+
+
+class Pawn(Widget, CacheMixIn):
 
     def __init__(self, event_manager, uid, name, initiative, x, y, width,
                  height, rotated, color=None, image=None):
         Widget.__init__(self, event_manager)
+        CacheMixIn.__init__(self)
+        print image
         self.active = False
         self.uid = uid
         self.name = name
@@ -42,12 +52,16 @@ class Pawn(Widget):
             color_index = len(self.event_manager.pawns) % n_colors
             color = COLORS[color_index]
             self.color = pygame.colordict.THECOLORS[color]
-        if self.image is None:
-            tw = self.tw
-            size = (width * tw - int(tw * 0.2), height * tw - int(tw * 0.2))
-            self.image = pygame.surface.Surface(size).convert()
-            self.image.fill(self.color)
-        self._image = self.image.copy()
+        tw = self.tw
+        size = (width * tw - int(tw * 0.2), height * tw - int(tw * 0.2))
+        default_image = pygame.surface.Surface(size).convert()
+        default_image.fill(self.color)
+        if image is None:
+            self._image = default_image
+        else:
+            loader = load_image_with_alpha(size)
+            self.set_cached_property('_image', image, loader, default_image)
+        self.image = self._image.copy()
         self.update_rect()
 
     def update_rect(self):
