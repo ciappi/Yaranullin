@@ -37,12 +37,13 @@ def saturation(x, low=None, high=None):
 
 def load_image(f, size, alpha=False):
     surf = pygame.image.load(f)
-#    size = surf.get_size()
-#    ratio = size[0] / float(size[1])
-#    if ratio >= 1:
-#        size = tw, int(tw / float(size[0]) * size[1])
-#    else:
-#        size = int(tw / float(size[1]) * size[0]), tw
+    surf_size = surf.get_size()
+    ratio = size[0] / float(surf_size[0]), size[1] / float(surf_size[1])
+    if ratio[0] <= ratio[1]:
+        ratio = ratio[0]
+    else:
+        ratio = ratio[1]
+    size = int(surf_size[0] * ratio), int(surf_size[0] * ratio)
     surf = pygame.transform.smoothscale(surf, size)
     if alpha:
         surf = surf.convert_alpha()
