@@ -19,7 +19,6 @@ import os
 import pygame
 
 from pygcurse import pygcurse
-from yaranullin.config import YR_RES_DIR
 from yaranullin.event_system import Listener
 from yaranullin.pygame_.base.event_manager import PygameGUI
 from yaranullin.editor.control import CommandPrompt
@@ -33,8 +32,7 @@ class PygcursesGUI(PygameGUI):
     def __init__(self, *args, **kargs):
         PygameGUI.__init__(self, *args, **kargs)
         self.set_display_mode((80, 24))
-        self.win.font = pygame.font.Font(
-            os.path.join(YR_RES_DIR, 'mono_font.ttf'), 28)
+        self.win.font = pygame.font.SysFont('monospace', 18)
         self.win.autoupdate = False
         self.cmd_win = CommandPrompt(self)
 
