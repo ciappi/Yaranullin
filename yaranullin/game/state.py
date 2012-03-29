@@ -70,6 +70,55 @@ class ClientState(Listener):
                 self.post(*events)
 
 
+class State(object):
+
+    def __init__(self):
+        self.state = {}
+        self.uids = {}
+
+    def change_board(self, uid):
+        self.state['active_board_uid'] = uid
+
+    def new_board(self, **kargs):
+        if 'boards' not in self.state:
+            self.state['boards'] = []
+        board = kargs
+        self.state['boards'].append(board)
+        self.state['active_board_uid'] = board['uid']
+        self.uids[board['uid']] = board
+
+    def del_board(self, uid):
+        boards = self.state['boards']
+        if uid in self.uids:
+            board = self.uids[uid]
+            boards.remove(board)
+            del self.uids[uid]
+
+    def next_pawn(self, uid):
+        board = self.uids[self.state['active_board_uid']]
+        board['active_pawn_uid'] = uid
+
+    def new_pawn(self, **kargs):
+        board = self.uids[self.state['active_board_uid']]
+        if 'pawns' not in board:
+            board['pawns'] = []
+        pawns = board['pawns']
+        pawn = kargs
+        pawns.append(pawn)
+        self.uids[pawn['uid']] = pawn
+
+    def update_pawn(self, uid, **kargs):
+        pawn = self.uids[uid]
+        pawn.update(kargs)
+
+    def del_pawn(self, uid):
+        board = self.uids[self.state['active_board_uid']]
+        pawn = self.uids[uid]
+        del self.uids[uid]
+        pawns = board['pawns']
+        pawns.remove(pawn)
+
+
 class ServerState(Listener):
 
     def __init__(self, event_manager):
@@ -109,6 +158,9 @@ class ServerState(Listener):
 
     def save_to_file(self):
         data = json.dumps(self.state, indent=2, sort_keys=True)
+        if os.path.isdir(self.game_dir):
+            os.makedirs(os.path.join(self.game_dir, 'resources'))
+            logging.info('A new game structure was created in ' + self.game_dir)
         fname = os.path.join(self.game_dir, 'main.json')
         with open(fname, mode='w') as main:
             main.write(data)

@@ -35,6 +35,7 @@ class SimpleGUI(PygameGUI):
 
     def __init__(self, event_manager):
         PygameGUI.__init__(self, event_manager)
+        self.set_display_mode()
         self.boards = {}
         self.huds = {}
         w, h = pygame.display.get_surface().get_size()
