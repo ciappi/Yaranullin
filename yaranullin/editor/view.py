@@ -15,6 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import os
+import textwrap
 
 import pygame
 
@@ -35,6 +36,7 @@ class PygcursesGUI(PygameGUI):
         self.win.font = pygame.font.SysFont('monospace', 18)
         self.win.autoupdate = False
         self.cmd_win = CommandPrompt(self)
+        self.prompt = 0
 
     def set_display_mode(self, size, fullscreen=None):
         self.win = pygcurse.PygcurseWindow(size[0], size[1],
@@ -64,9 +66,13 @@ class PygcursesGUI(PygameGUI):
 
     def handle_prompt(self, ev_type, prompt):
         prompt = str(prompt)
-        lines = prompt.split('\n')
-        self.prompt = len(lines[-1])
+        if len(prompt) > 78:
+            lines = textwrap.wrap(prompt, width=78)
+        else:
+            lines = [prompt, ]
+        lines.reverse()
+        self.prompt = len(lines[0])
         # Clear the prompt
-        self.win.fill(' ', region=(0, 24 - len(lines), None, None))
-        for line in xrange(23, 23 - len(lines), -1):
-            self.win.putchars(prompt, x=0, y=line)
+        self.win.fill(' ', region=(0, 24 - len(lines) - 1, None, None))
+        for n, line in zip(xrange(23, 23 - len(lines), -1), lines):
+            self.win.putchars(line, x=0, y=n)
