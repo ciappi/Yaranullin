@@ -15,58 +15,54 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-"""Yaranullin's shell.
-
-Commands:
-ls - list something
-"""
-
-
-
 import shlex
 
 import pygame.locals as PL
 
-from pygcurse import pygcurse
 from yaranullin.event_system import Listener, Event
 from yaranullin.game.state import State
 
 
 class CommandPrompt(Listener, State):
 
+    """Yaranullin's shell."""
+
+    prompt = 'yrn$ '
+
     def __init__(self, event_manager):
         Listener.__init__(self, event_manager)
         State.__init__(self)
-        self.text_box = pygcurse.PygcurseTextbox(self.win,
-                                                 region=(0, 21, 80, 3),
-                                                 caption="shell")
+        self.cmd_line = ''
+        self.post(Event('prompt', prompt=self.prompt))
+        self.generate_main_doc_string()
 
-    @property
-    def win(self):
-        return self.event_manager.win
-
-    def __set_prompt(self, text):
-        self.text_box.text = text
-
-    def __get_prompt(self):
-        return self.text_box.text
-
-    prompt = property(__get_prompt, __set_prompt)
-
-    def handle_tick(self, ev_type, dt):
-        self.text_box.update()
+    def generate_main_doc_string(self):
+        lines = self.__doc__.split('\n')
+        self.__doc__ = lines.pop(0).strip()
+        for line in lines:
+            self.__doc__ += '\n'
+            self.__doc__ += line.strip()
+        self.__doc__ += '\n\nCommands:'
+        _do_methods = (getattr(self, attr) for attr in dir(self)
+                              if (attr.startswith('do_') and
+                                 callable(getattr(self, attr))))
+        _do_docs = (m.__doc__.split('\n')[0] for m in _do_methods if m.__doc__)
+        for d in _do_docs:
+            self.__doc__ += '\n'
+            self.__doc__ += d
 
     def handle_game_event_board_new(self, ev_type, **kargs):
         self.new_board(**kargs)
 
     def handle_key_down(self, ev_type, key, mod, unicode):
         if key == PL.K_BACKSPACE:
-            self.prompt = self.prompt[:-1]
+            self.cmd_line = self.cmd_line[:-1]
         elif key == PL.K_RETURN:
-            if not self.execute(self.prompt):
-                self.prompt = ''
+            if not self.execute(self.cmd_line):
+                self.cmd_line = ''
         else:
-            self.prompt += unicode
+            self.cmd_line += unicode
+        self.post(Event('prompt', prompt=self.prompt + self.cmd_line))
 
     def parse_command(self, cmd):
         try:
@@ -75,23 +71,55 @@ class CommandPrompt(Listener, State):
             pass
 
     def execute(self, text):
+        method = None
         args = self.parse_command(text)
         if args:
             command = args.pop(0)
-        else:
-            command = None
-        if command == 'clear':
-            self.post(Event('print', text=''))
-        elif command == 'quit':
-            self.post(Event('quit'))
-        elif command == 'boards':
-            return self.boards(args)
-        elif command == 'help':
-            self.post(Event('print', text=__doc__))
+            if hasattr(self, 'do_' + command):
+                method = getattr(self, 'do_' + command)
+        if callable(method):
+            method(args)
         else:
             return True
 
-    def boards(self, args):
+    def do_help(self, args):
+        """help - get help for available commands.
+        Usage: help [command]
+        """
+        help_str = ''
+        n = len(args)
+        if n == 1:
+            arg = args.pop()
+            try:
+                method = getattr(self, 'do_' + arg)
+                if not callable(method):
+                    raise AttributeError
+            except AttributeError:
+                help_str = "Unknown command '" + str(arg) + "'"
+            else:
+                doc = method.__doc__ if method.__doc__ else ''
+                lines = doc.split('\n')
+                for line in lines:
+                    help_str += line.strip()
+                    help_str += '\n'
+        elif n == 0:
+            help_str = self.__doc__
+        self.post(Event('print', text=help_str))
+
+    def do_quit(self, args):
+        """quit - quit Yaranullin."""
+        self.post(Event('quit'))
+
+    def do_clear(self, args):
+        """clear - clear the output window."""
+        self.post(Event('print', text=''))
+
+    def do_boards(self, args):
+        """boards - manage boards.
+        Usage: board [commands] [args]
+        board - list all the boards
+        board add 'name' 'width' 'height' - add a board
+        """
         n = len(args)
         if n == 0:
             # Just list the boards in the game, if any.
@@ -108,6 +136,6 @@ class CommandPrompt(Listener, State):
             # board add --name test_board -w 3 -h 2
             if args.pop(0) == 'add':
                 if len(args) == 6:
-
+                    pass
         else:
             return True

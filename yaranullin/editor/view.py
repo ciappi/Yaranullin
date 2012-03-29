@@ -27,6 +27,9 @@ from yaranullin.editor.control import CommandPrompt
 
 class PygcursesGUI(PygameGUI):
 
+    rate = 255/0.5
+    color = 0
+
     def __init__(self, *args, **kargs):
         PygameGUI.__init__(self, *args, **kargs)
         self.set_display_mode((80, 24))
@@ -40,6 +43,17 @@ class PygcursesGUI(PygameGUI):
                                            "Yaranullin's editor")
 
     def handle_tick(self, ev_type, dt):
+        color = self.color + self.rate * dt
+        if color > 255:
+            color = 255
+            self.rate = - self.rate
+        elif color < 0:
+            color = 0
+            self.rate = - self.rate
+        self.color = color
+        col = int(self.color)
+        col = col, col, col
+        self.win.paint(x=self.prompt, y=23, bgcolor=col)
         self.win.update()
 
     def handle_print(self, ev_type, text):
@@ -49,3 +63,12 @@ class PygcursesGUI(PygameGUI):
 
     def handle_print_append(self, ev_type, text):
         self.win.pygprint(text)
+
+    def handle_prompt(self, ev_type, prompt):
+        prompt = str(prompt)
+        lines = prompt.split('\n')
+        self.prompt = len(lines[-1])
+        # Clear the prompt
+        self.win.fill(' ', region=(0, 24 - len(lines), None, None))
+        for line in xrange(23, 23 - len(lines), -1):
+            self.win.putchars(prompt, x=0, y=line)
