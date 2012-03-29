@@ -114,6 +114,10 @@ class CommandPrompt(Listener, State):
         """clear - clear the output window."""
         self.post(Event('print', text=''))
 
+    def do_save(self, args):
+        """save - save the state of the game"""
+        self.post(Event('game-save'))
+
     def do_boards(self, args):
         """boards - manage boards.
         Usage: board [commands] [args]
@@ -133,9 +137,9 @@ class CommandPrompt(Listener, State):
             self.post(Event('print', text=text))
         elif n >= 2:
             # Add a new board.
-            # board add --name test_board -w 3 -h 2
             if args.pop(0) == 'add':
-                if len(args) == 6:
-                    pass
+                if len(args) == 3:
+                    self.post(Event('game-request-board-new', name=args[0],
+                                    width=int(args[1]), height=int(args[2])))
         else:
             return True

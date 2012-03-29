@@ -21,9 +21,10 @@ import os
 import json
 import bz2
 import logging
+import shutil
 
 from yaranullin.event_system import Listener, Event
-from yaranullin.config import YR_SAVE_DIR
+from yaranullin.config import YR_SAVE_DIR, YR_RES_DIR
 
 
 class ClientState(Listener):
@@ -75,6 +76,7 @@ class State(object):
     def __init__(self):
         self.state = {}
         self.uids = {}
+        self.used_images = set(["white_tile.png", "black_tile.png"])
 
     def change_board(self, uid):
         self.state['active_board_uid'] = uid
@@ -83,6 +85,17 @@ class State(object):
         if 'boards' not in self.state:
             self.state['boards'] = []
         board = kargs
+        # Add default black and white tiles to the board
+        board["tiles"] = []
+        w, h = board["width"], board["height"]
+        for x in xrange(w):
+            for y in xrange(h):
+                if (x + y) % 2 == 0:
+                    board["tiles"].append({"image": "white_tile.png", "x":x,
+                                           "y":y})
+                else:
+                    board["tiles"].append({"image": "black_tile.png", "x":x,
+                                           "y":y})
         self.state['boards'].append(board)
         self.state['active_board_uid'] = board['uid']
         self.uids[board['uid']] = board
@@ -126,8 +139,7 @@ class ServerState(Listener):
         self.save_dir = YR_SAVE_DIR
         self.game_dir = None
         self.clean_exit = False
-        self.state = {}
-        self.uids = {}
+        self.state = State()
         self.cache = {}
 
     def load(self, new_state):
@@ -157,13 +169,20 @@ class ServerState(Listener):
             self.post(*events)
 
     def save_to_file(self):
-        data = json.dumps(self.state, indent=2, sort_keys=True)
-        if os.path.isdir(self.game_dir):
+        data = json.dumps(self.state.state, indent=2, sort_keys=True)
+        print self.game_dir
+        if not os.path.isdir(self.game_dir):
             os.makedirs(os.path.join(self.game_dir, 'resources'))
             logging.info('A new game structure was created in ' + self.game_dir)
         fname = os.path.join(self.game_dir, 'main.json')
         with open(fname, mode='w') as main:
             main.write(data)
+        # Copy used textures
+        source = os.path.join(YR_RES_DIR, 'textures')
+        dest = os.path.join(self.game_dir, 'resources')
+        for img in self.state.used_images:
+            f = os.path.join(source, img)
+            shutil.copy2(f, dest)
 
     def handle_resource_request(self, ev_type, name):
         fname = os.path.join(self.game_dir, 'resources', name)
@@ -187,50 +206,29 @@ class ServerState(Listener):
         self.load_from_dir(dname)
 
     def handle_game_request_update(self, ev_type):
-        event = Event('game-event-update', state=self.state)
+        event = Event('game-event-update', state=self.state.state)
         self.post(event)
 
     def handle_game_event_board_change(self, ev_type, uid):
-        self.state['active_board_uid'] = uid
+        self.state.change_board(uid)
 
     def handle_game_event_board_new(self, ev_type, **kargs):
-        if 'boards' not in self.state:
-            self.state['boards'] = []
-        board = kargs
-        self.state['boards'].append(board)
-        self.state['active_board_uid'] = board['uid']
-        self.uids[board['uid']] = board
+        self.state.new_board(**kargs)
 
     def handle_game_event_board_del(self, ev_type, uid):
-        boards = self.state['boards']
-        if uid in self.uids:
-            board = self.uids[uid]
-            boards.remove(board)
-            del self.uids[uid]
+        self.state.del_board(uid)
 
     def handle_game_event_pawn_next(self, ev_type, uid):
-        board = self.uids[self.state['active_board_uid']]
-        board['active_pawn_uid'] = uid
+        self.state.next_pawn(uid)
 
     def handle_game_event_pawn_new(self, ev_type, **kargs):
-        board = self.uids[self.state['active_board_uid']]
-        if 'pawns' not in board:
-            board['pawns'] = []
-        pawns = board['pawns']
-        pawn = kargs
-        pawns.append(pawn)
-        self.uids[pawn['uid']] = pawn
+        self.state.new_pawn(**kargs)
 
     def handle_game_event_pawn_updated(self, ev_type, uid, **kargs):
-        pawn = self.uids[uid]
-        pawn.update(kargs)
+        self.state.update_pawn(uid, **kargs)
 
     def handle_game_event_pawn_del(self, ev_type, uid):
-        board = self.uids[self.state['active_board_uid']]
-        pawn = self.uids[uid]
-        del self.uids[uid]
-        pawns = board['pawns']
-        pawns.remove(pawn)
+        self.state.del_pawn(uid)
 
     def handle_quit(self, event):
         self.clean_exit = True

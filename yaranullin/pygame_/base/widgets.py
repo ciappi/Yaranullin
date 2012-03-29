@@ -84,7 +84,7 @@ class TextLabel(Widget):
         self.text = text
         self.font_color = font_color
         self.font_size = font_size
-        self.font_name = os.path.join(YR_RES_DIR, font_name)
+        self.font_name = os.path.join(YR_RES_DIR, 'fonts', font_name)
         try:
             self.font = pygame.font.Font(self.font_name,
                                          self.font_size)
