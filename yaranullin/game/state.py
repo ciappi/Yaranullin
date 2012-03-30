@@ -96,6 +96,7 @@ class State(object):
                 else:
                     board["tiles"].append({"image": "black_tile.png", "x":x,
                                            "y":y})
+        board['pawns'] = []
         self.state['boards'].append(board)
         self.state['active_board_uid'] = board['uid']
         self.uids[board['uid']] = board
@@ -113,8 +114,6 @@ class State(object):
 
     def new_pawn(self, **kargs):
         board = self.uids[self.state['active_board_uid']]
-        if 'pawns' not in board:
-            board['pawns'] = []
         pawns = board['pawns']
         pawn = kargs
         pawns.append(pawn)
@@ -131,15 +130,36 @@ class State(object):
         pawns = board['pawns']
         pawns.remove(pawn)
 
+    def handle_game_event_board_change(self, ev_type, uid):
+        self.change_board(uid)
 
-class ServerState(Listener):
+    def handle_game_event_board_new(self, ev_type, **kargs):
+        self.new_board(**kargs)
+
+    def handle_game_event_board_del(self, ev_type, uid):
+        self.del_board(uid)
+
+    def handle_game_event_pawn_next(self, ev_type, uid):
+        self.next_pawn(uid)
+
+    def handle_game_event_pawn_new(self, ev_type, **kargs):
+        self.new_pawn(**kargs)
+
+    def handle_game_event_pawn_updated(self, ev_type, uid, **kargs):
+        self.update_pawn(uid, **kargs)
+
+    def handle_game_event_pawn_del(self, ev_type, uid):
+        self.del_pawn(uid)
+
+
+class ServerState(Listener, State):
 
     def __init__(self, event_manager):
         Listener.__init__(self, event_manager)
+        State.__init__(self)
         self.save_dir = YR_SAVE_DIR
         self.game_dir = None
         self.clean_exit = False
-        self.state = State()
         self.cache = {}
 
     def load(self, new_state):
@@ -169,7 +189,7 @@ class ServerState(Listener):
             self.post(*events)
 
     def save_to_file(self):
-        data = json.dumps(self.state.state, indent=2, sort_keys=True)
+        data = json.dumps(self.state, indent=2, sort_keys=True)
         print self.game_dir
         if not os.path.isdir(self.game_dir):
             os.makedirs(os.path.join(self.game_dir, 'resources'))
@@ -206,29 +226,8 @@ class ServerState(Listener):
         self.load_from_dir(dname)
 
     def handle_game_request_update(self, ev_type):
-        event = Event('game-event-update', state=self.state.state)
+        event = Event('game-event-update', state=self.state)
         self.post(event)
-
-    def handle_game_event_board_change(self, ev_type, uid):
-        self.state.change_board(uid)
-
-    def handle_game_event_board_new(self, ev_type, **kargs):
-        self.state.new_board(**kargs)
-
-    def handle_game_event_board_del(self, ev_type, uid):
-        self.state.del_board(uid)
-
-    def handle_game_event_pawn_next(self, ev_type, uid):
-        self.state.next_pawn(uid)
-
-    def handle_game_event_pawn_new(self, ev_type, **kargs):
-        self.state.new_pawn(**kargs)
-
-    def handle_game_event_pawn_updated(self, ev_type, uid, **kargs):
-        self.state.update_pawn(uid, **kargs)
-
-    def handle_game_event_pawn_del(self, ev_type, uid):
-        self.state.del_pawn(uid)
 
     def handle_quit(self, event):
         self.clean_exit = True
