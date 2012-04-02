@@ -30,16 +30,41 @@ class PygameKeyboard(Listener):
     than post it to the event manager.
     """
 
+    def __init__(self, event_manager):
+        Listener.__init__(self, event_manager)
+        self.state = 'released'
+        self.event = None
+        self.t = 0
+        self.delay = 0.5
+        self.Dt = self.delay / 20
+
     def handle_tick(self, ev_type, dt):
+        events = []
+        if self.state == 'pressed':
+            self.t += dt
+            if self.t >= self.delay:
+                self.state = 'firing'
+                events.append(self.event)
+        elif self.state == 'firing':
+            self.t += dt
+            if (self.t - self.delay) > self.Dt:
+                events.append(self.event)
+                self.t = self.delay
         for pygame_event in pygame.event.get([PL.KEYDOWN, PL.KEYUP]):
-            event = None
             if pygame_event.type == PL.KEYDOWN:
                 event = Event('key-down', key=pygame_event.key,
                               mod=pygame_event.mod,
                               unicode=pygame_event.unicode)
-
-            if event:
-                self.event_manager.post(event)
+                events.append(event)
+                self.event = event
+                self.state = 'pressed'
+                self.t = 0
+            else:
+                self.event = None
+                self.state = 'released'
+                self.t = 0
+        if events:
+            self.post(*events)
 
 
 class PygameMouse(Listener):
