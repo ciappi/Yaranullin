@@ -37,7 +37,12 @@ class PygameGUI(EventManagerAndListener):
         self.keyboard_controller = PygameKeyboard(self)
         self.mouse_controller = PygameMouse(self)
         self.system_controller = PygameSystem(self)
-        pygame.display.set_mode((0, 0))  # , PL.FULLSCREEN)
+
+    def set_display_mode(self, size=(0, 0), fullscreen=False):
+        if fullscreen:
+            pygame.display.set_mode(size, PL.FULLSCREEN)
+        else:
+            pygame.display.set_mode(size)
 
     @property
     def abs_pos(self):

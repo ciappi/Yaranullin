@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
 from yaranullin.main import main
 from yaranullin.config import __version__, LOG_FILE_CLIENT, LOG_FILE_SERVER, \
-                              LOG_LEVEL
+                              LOG_FILE_EDITOR, LOG_LEVEL
 
 
 def parse_args():
@@ -58,6 +58,8 @@ def init_logging(mode):
         fname = LOG_FILE_SERVER
     elif mode == 'client':
         fname = LOG_FILE_CLIENT
+    elif mode == 'editor':
+        fname = LOG_FILE_EDITOR
     try:
         level = getattr(logging, LOG_LEVEL)
     except AttributeError:

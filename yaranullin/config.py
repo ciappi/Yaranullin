@@ -49,6 +49,7 @@ COLORS = ['red', 'violetred', 'gold', 'maroon', 'turquoise', 'green',
 # Log related stuff.
 LOG_FILE_CLIENT = os.path.join(YR_DIR, 'client.log')
 LOG_FILE_SERVER = os.path.join(YR_DIR, 'server.log')
+LOG_FILE_EDITOR = os.path.join(YR_DIR, 'editor.log')
 LOG_LEVEL = 'DEBUG'
 
 # Create a global configuration object and use args to update configuration
