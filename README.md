@@ -37,6 +37,17 @@ $ ./bin/yrn client --host 127.0.0.1
 
 You can change the host if the server is on another machine on the network.
 
+## Editor
+
+This is a simple textual editor to create or modify a game.
+
+```bash
+$ cd /path/to/yaranullin/sources
+$ ./bin/yrn editor --game test
+```
+
+At the editor prompt you can type 'help' to get help.
+
 ## Images
 
 All pawn images are taken from http://www.immortalnights.com/tokensite/tokenpacks.html

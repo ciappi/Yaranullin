@@ -41,11 +41,13 @@ class ClientState(Listener):
         boards = new_state['boards']
         for board in boards:
             pawns = board.pop('pawns')
-            active_pawn_uid = board.pop('active_pawn_uid')
             events.append(Event('game-event-board-new', **board))
-            for pawn in pawns:
-                events.append(Event('game-event-pawn-new', **pawn))
-            events.append(Event('game-event-pawn-next', uid=active_pawn_uid))
+            if 'active_pawn_id' in board:
+                active_pawn_uid = board.pop('active_pawn_uid')
+                for pawn in pawns:
+                    events.append(Event('game-event-pawn-new', **pawn))
+                events.append(Event('game-event-pawn-next',
+                                    uid=active_pawn_uid))
         events.append(Event('game-event-board-change',
                             uid=new_state['active_board_uid']))
         return events
@@ -91,11 +93,11 @@ class State(object):
         for x in xrange(w):
             for y in xrange(h):
                 if (x + y) % 2 == 0:
-                    board["tiles"].append({"image": "white_tile.png", "x":x,
-                                           "y":y})
+                    board["tiles"].append({"image": "white_tile.png", "x": x,
+                                           "y": y})
                 else:
-                    board["tiles"].append({"image": "black_tile.png", "x":x,
-                                           "y":y})
+                    board["tiles"].append({"image": "black_tile.png", "x": x,
+                                           "y": y})
         board['pawns'] = []
         self.state['boards'].append(board)
         self.state['active_board_uid'] = board['uid']
@@ -107,6 +109,15 @@ class State(object):
             board = self.uids[uid]
             boards.remove(board)
             del self.uids[uid]
+
+    def update_tile(self, x, y, image):
+        board = self.uids[self.state['active_board_uid']]
+        for tile in board["tiles"]:
+            pos = (tile["x"], tile["y"])
+            if (x, y) == pos:
+                tile["image"] = image
+                self.used_images.add(image)
+                break
 
     def next_pawn(self, uid):
         board = self.uids[self.state['active_board_uid']]
@@ -151,6 +162,9 @@ class State(object):
     def handle_game_event_pawn_del(self, ev_type, uid):
         self.del_pawn(uid)
 
+    def handle_update_tile(self, ev_type, x, y, image):
+        self.update_tile(x, y, image)
+
 
 class ServerState(Listener, State):
 
@@ -167,11 +181,13 @@ class ServerState(Listener, State):
         boards = new_state['boards']
         for board in boards:
             pawns = board.pop('pawns')
-            active_pawn_uid = board.pop('active_pawn_uid')
             events.append(Event('game-request-board-new', **board))
-            for pawn in pawns:
-                events.append(Event('game-request-pawn-new', **pawn))
-            events.append(Event('game-request-pawn-next', uid=active_pawn_uid))
+            if 'active_pawn_id' in board:
+                active_pawn_uid = board.pop('active_pawn_uid')
+                for pawn in pawns:
+                    events.append(Event('game-request-pawn-new', **pawn))
+                events.append(Event('game-request-pawn-next',
+                                    uid=active_pawn_uid))
         events.append(Event('game-request-board-change',
                             uid=new_state['active_board_uid']))
         return events
@@ -190,17 +206,17 @@ class ServerState(Listener, State):
 
     def save_to_file(self):
         data = json.dumps(self.state, indent=2, sort_keys=True)
-        print self.game_dir
         if not os.path.isdir(self.game_dir):
             os.makedirs(os.path.join(self.game_dir, 'resources'))
-            logging.info('A new game structure was created in ' + self.game_dir)
+            logging.info('A new game structure was created in ' +
+                         self.game_dir)
         fname = os.path.join(self.game_dir, 'main.json')
         with open(fname, mode='w') as main:
             main.write(data)
         # Copy used textures
         source = os.path.join(YR_RES_DIR, 'textures')
         dest = os.path.join(self.game_dir, 'resources')
-        for img in self.state.used_images:
+        for img in self.used_images:
             f = os.path.join(source, img)
             shutil.copy2(f, dest)
 

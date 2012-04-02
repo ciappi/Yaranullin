@@ -174,7 +174,8 @@ class CommandPrompt(Listener, State):
                                     width=int(args[1]), height=int(args[2])))
             elif cmd == 'del':
                 if len(args) == 1:
-                    self.post(Event('game-event-board-del', uid=int(args.pop())))
+                    self.post(Event('game-event-board-del',
+                                    uid=int(args.pop())))
         else:
             return True
 
@@ -206,6 +207,37 @@ class CommandPrompt(Listener, State):
                                     height=int(args[5])))
             elif cmd == 'del':
                 if len(args) == 1:
-                    self.post(Event('game-event-pawn-del', uid=int(args.pop())))
+                    self.post(Event('game-event-pawn-del',
+                                    uid=int(args.pop())))
         else:
             return True
+
+    def do_tile(self, args):
+        """tile - get or set a tile.
+        Usage: tile 'x' 'y' [image]
+        tile 'x' 'y' - show the name of the tile at x, y
+        tile 'x' 'y' 'image' - set the tile at x, y to image
+        """
+        n = len(args)
+        if n == 2:
+            x, y = int(args[0]), int(args[1])
+            board = self.uids[self.state['active_board_uid']]
+            text = ''
+            for tile in board["tiles"]:
+                pos = (tile["x"], tile["y"])
+                if (x, y) == pos:
+                    text = tile["image"]
+                    break
+            self.post(Event('print', text=text))
+        elif n == 3:
+            x, y = int(args[0]), int(args[1])
+            img = args[2]
+            board = self.uids[self.state['active_board_uid']]
+            text = ''
+            for tile in board["tiles"]:
+                pos = (tile["x"], tile["y"])
+                if (x, y) == pos:
+                    text = "Set tile " + str(x) + ", " + str(y) + " to: " + img
+                    self.post(Event('update-tile', x=x, y=y, image=img))
+                    break
+            self.post(Event('print', text=text))
