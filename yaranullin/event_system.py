@@ -61,7 +61,10 @@ class EventManager(object):
         # Used ids.
         self.free_ids = set(LISTENER_IDS_POOL)
 
-    def get_new_uid(self):
+    def get_new_uid(self, uid):
+        if uid in self.free_ids:
+            self.free_ids.remove(uid)
+            return uid
         if len(self.free_ids):
             new_uid = choice(list(self.free_ids))
             self.free_ids.remove(new_uid)
@@ -151,10 +154,7 @@ class Listener(object):
     def __set_uid(self, new_uid):
         """Get a unique id."""
         if self._uid is None:
-            if new_uid is None:
-                self._uid = self.event_manager.get_new_uid()
-            else:
-                self._uid = new_uid
+            self._uid = self.event_manager.get_new_uid(new_uid)
 
     def __get_uid(self):
         return self._uid
@@ -197,8 +197,8 @@ class EventManagerAndListener(EventManager, Listener):
         Listener.__init__(self, event_manager)
         self.independent = independent
 
-    def get_new_uid(self):
-        return self.event_manager.get_new_uid()
+    def get_new_uid(self, uid):
+        return self.event_manager.get_new_uid(uid)
 
     def upgrade_wanted_events(self):
         """Upgrade wanted events avoiding duplicates.
