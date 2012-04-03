@@ -19,6 +19,7 @@
 import sys
 import logging
 
+from copy import deepcopy
 from random import choice
 from weakref import proxy
 from collections import deque
@@ -166,7 +167,6 @@ class Listener(object):
 
     def notify(self, event):
         """Handle events."""
-        #self.callbacks_dict[event.ev_type](event)
         kargs = dict(event.__dict__)
         ev_type = kargs.pop('ev_type')
         self.callbacks_dict[event.ev_type](ev_type, **kargs)
@@ -242,6 +242,10 @@ class EventManagerAndListener(EventManager, Listener):
 
     def notify(self, event):
 
+        # If this EventManager is independent (means it runs on its own
+        # thread),then copy the event before using it any further.
+        if self.independent:
+            event = deepcopy(event)
         # Be notified about wanted events like a regular Listener.
         if event.ev_type in self.wanted_events:
             Listener.notify(self, event)
