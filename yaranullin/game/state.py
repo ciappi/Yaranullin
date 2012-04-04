@@ -41,9 +41,9 @@ class ClientState(Listener):
         boards = new_state['boards']
         for board in boards:
             pawns = board.pop('pawns')
+            active_pawn_uid = board.pop('active_pawn_uid', None)
             events.append(Event('game-event-board-new', **board))
-            if 'active_pawn_id' in board:
-                active_pawn_uid = board.pop('active_pawn_uid')
+            if 'active_pawn_id':
                 for pawn in pawns:
                     events.append(Event('game-event-pawn-new', **pawn))
                 events.append(Event('game-event-pawn-next',
@@ -181,9 +181,9 @@ class ServerState(Listener, State):
         boards = new_state['boards']
         for board in boards:
             pawns = board.pop('pawns')
+            active_pawn_uid = board.pop('active_pawn_uid', None)
             events.append(Event('game-request-board-new', **board))
-            if 'active_pawn_id' in board:
-                active_pawn_uid = board.pop('active_pawn_uid')
+            if 'active_pawn_id':
                 for pawn in pawns:
                     events.append(Event('game-request-pawn-new', **pawn))
                 events.append(Event('game-request-pawn-next',

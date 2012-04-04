@@ -29,7 +29,7 @@ class Board(ScrollableContainer, CacheMixIn):
     """The view of a Board."""
 
     def __init__(self, event_manager, uid, name, width, height, rect=None,
-                 tiles=None):
+                 tiles=None, **kargs):
         ScrollableContainer.__init__(self, event_manager, rect)
         CacheMixIn.__init__(self)
         self.uid = uid
