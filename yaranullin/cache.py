@@ -17,7 +17,7 @@
 import os
 import bz2
 
-from cStringIO import StringIO
+from StringIO import StringIO
 
 from yaranullin.event_system import Listener, Event
 from yaranullin.config import YR_CACHE_DIR
@@ -107,7 +107,8 @@ class CacheMixIn(object):
             # Prevent further requests
             self._cache[property_name_from_cache] = None
 
-    def set_cached_property(self, property_name_local, property_name_from_cache,
+    def set_cached_property(self, property_name_local,
+                            property_name_from_cache,
                             load_func, property_default_value=None):
         """Link a local property with a value from the cache."""
         if not callable(load_func):

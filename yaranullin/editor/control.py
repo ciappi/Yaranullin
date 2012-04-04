@@ -151,6 +151,7 @@ class CommandPrompt(Listener, State):
         """boards - manage boards.
         Usage: board [commands] [args]
         boards - list all the boards
+        boards 'uid' - change the active board
         boards add 'name' 'width' 'height' - add a board
         boards del 'uid' - delete a board from the current board
         """
@@ -163,8 +164,16 @@ class CommandPrompt(Listener, State):
             except KeyError:
                 boards = []
             for board in boards:
+                if board["uid"] == self.state['active_board_uid']:
+                    text += ' * '
                 text += board['name'] + '    uid: ' + str(board['uid']) + '\n'
             self.post(Event('print', text=text))
+        elif n == 1:
+            try:
+                uid = int(args.pop())
+            except ValueError:
+                return True
+            self.post(Event('game-request-board-change', uid=uid))
         elif n >= 2:
             # Add a new board.
             cmd = args.pop(0)
