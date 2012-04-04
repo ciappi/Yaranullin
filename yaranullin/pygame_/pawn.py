@@ -34,7 +34,6 @@ class Pawn(Widget, CacheMixIn):
                  height, rotated, color=None, image=None):
         Widget.__init__(self, event_manager)
         CacheMixIn.__init__(self)
-        print image
         self.active = False
         self.uid = uid
         self.name = name
