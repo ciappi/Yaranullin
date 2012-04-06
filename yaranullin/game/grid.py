@@ -15,6 +15,9 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
+"""The board logic, independent of any event or listener stuff."""
+
+
 class IndexOutOfGrid(Exception):
 
     pass
@@ -22,7 +25,14 @@ class IndexOutOfGrid(Exception):
 
 class Cell(object):
 
-    """A simple cell on a board."""
+    """A simple cell on a board.
+    
+    A cell represent a squared area of 1.5 meters. Every cell has some
+    content, for example a PG, a PNG or an obstacle.
+
+    The cell is identified by its position on the grid, like a matrix element.
+    
+    """
 
     def __init__(self, x, y, content):
         """Initialize the Cell.
@@ -49,7 +59,9 @@ class Grid(object):
 
     """Container of Cell objects.
 
-    Container for all the cells on the same board.
+    Container for all the cells on the same board in a sparse matrix fashion.
+    This means that a Cell exists only if it has some content, otherwise it is
+    deleted from memory.
 
     """
 
@@ -71,7 +83,8 @@ class Grid(object):
     def validate_position(self, x1, y1, x2, y2):
         """Verify that all indexes are within grid boundaries.
 
-        Raise an IndexOutOfGrid exception.
+        Raise an IndexOutOfGrid exception if some element in the area is out
+        of bound.
 
         """
         if not (0 <= x1 < self.width and 0 <= y1 < self.height):
@@ -80,7 +93,7 @@ class Grid(object):
             raise IndexOutOfGrid
 
     def set_cells(self, x1, y1, width, height, content):
-        """Create the cells within the range."""
+        """Create ot delete the cells within the range."""
         assert(width >= 1)
         assert(height >= 1)
         x2, y2 = x1 + width - 1, y1 + height - 1

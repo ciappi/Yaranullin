@@ -14,6 +14,16 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+"""Event loop facilities.
+
+There is one CPUSpinner attached to the main EventManager and there is one
+more for every independent EventManagerAndListener. This means there there is
+one CPUSpinner for every thread, included the main one.
+
+Its tasks are to periodically generate a 'tick' event and to catch all
+unhandled exceptions.
+
+"""
 
 from time import sleep
 
@@ -34,14 +44,21 @@ class CPUSpinner(Listener):
         self.keep_going = True
 
     def run(self):
+        """Event loop.
+        
+        Periodically post a 'tick' event so than the corresponding event
+        manager can process its event queue.
+        
+        """
         try:
             while self.keep_going:
                 self.post(Event('tick'))
                 sleep(0.01)
         except KeyboardInterrupt:
+            # Try to exit cleanly.
             self.post(Event('quit'))
             self.post(Event('tick'))
 
     def handle_quit(self, ev_type):
-        # this will stop the while loop from running
+        """This will stop the while loop from running."""
         self.keep_going = False

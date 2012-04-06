@@ -14,6 +14,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+"""View class for the editor."""
+
 import os
 import textwrap
 
@@ -26,6 +28,20 @@ from yaranullin.editor.control import CommandPrompt
 
 
 class PygcursesGUI(PygameGUI):
+
+    """This class is a very simple textual editor for a game.
+    
+    This class holds only the visual part of the editor.
+
+    For now it displays an 80x24 ncurses like terminal with a command prompt
+    at the bottom of it and a blinking cursor. On the remaining part of the
+    window the outputs of the commands are displayed.
+
+    This classes is build on top of pygcurse, a cross platform curses library
+    build in turn atop pygame. This ensures support not only for all Unixes
+    but also for Windows and Android platforms.
+    
+    """
 
     rate = 255/0.5
     color = 0
@@ -43,6 +59,7 @@ class PygcursesGUI(PygameGUI):
                                            "Yaranullin's editor")
 
     def handle_tick(self, ev_type, dt):
+        """Update the screen and provides the cursor animation."""
         color = self.color + self.rate * dt
         if color > 255:
             color = 255
@@ -57,14 +74,25 @@ class PygcursesGUI(PygameGUI):
         self.win.update()
 
     def handle_print(self, ev_type, text):
+        """Print something on the screen clearing any previous data.
+        
+        This is used to print the output of a command.
+        
+        """
         self.win.cursor = (0, 0)
         self.win.setscreencolors(clear=True)
         self.win.pygprint(text)
 
     def handle_print_append(self, ev_type, text):
+        """Append some text to the screen."""
         self.win.pygprint(text)
 
     def handle_prompt(self, ev_type, prompt):
+        """Print the prompt.
+        
+        There is support for multiline text.
+        
+        """
         prompt = str(prompt)
         if len(prompt) > 78:
             lines = textwrap.wrap(prompt, width=78)

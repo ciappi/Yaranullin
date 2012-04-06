@@ -42,7 +42,7 @@ class CellContent(Listener):
 
     @property
     def grid(self):
-        """Return a reference to the grid."""
+        """A read only reference to the grid."""
         return self.event_manager.grid
 
     def place(self, x, y, rotate):

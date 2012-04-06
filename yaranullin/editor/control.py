@@ -14,6 +14,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+"""Control classes for the game editor."""
 
 import os
 import shlex
@@ -27,7 +28,24 @@ from yaranullin.config import __version__, YR_DIR
 
 class CommandPrompt(Listener, State):
 
-    """Yaranullin's shell."""
+    """Yaranullin's shell.
+    
+    This class is similar to the Cmd framework of Python but it fits better to
+    Yaranullin's event system.
+
+    Basically it defines a set of commands to modify the parameters of a game,
+    i.e. adding/remove a board, adding/remove a pawn and so on.
+
+    It tries to be as cross platform as possible, so it do not use readline or
+    ncurses which are specific to Unixes.
+
+    For now, apart from a very basic set of commands, it implements an help
+    system and an history of the used commands (saved across different
+    sessions).
+
+    This class do not implements any graphic functions.
+    
+    """
 
     prompt = 'yrn$ '
     fhist = os.path.join(YR_DIR, 'history.log')
@@ -38,6 +56,7 @@ class CommandPrompt(Listener, State):
         self.cmd_line = ''
         self.post(Event('prompt', prompt=self.prompt))
         self.generate_main_doc_string()
+        # Tries to load the command history from disk.
         try:
             with open(self.fhist) as f:
                 self.hist = (f.read()).split('\n')
@@ -46,6 +65,9 @@ class CommandPrompt(Listener, State):
         self.hist_idx = len(self.hist) - 1
 
     def handle_quit(self, ev_type):
+        """Save history upon quit."""
+        # FIXME: the lenght of the history should be limited, maybe using a
+        # deque instead of a simple list.
         with open(self.fhist, 'w+a') as f:
             for line in self.hist:
                 if line:
@@ -53,31 +75,53 @@ class CommandPrompt(Listener, State):
                     f.write('\n')
 
     def generate_main_doc_string(self):
+        """Refactors this class docstring.
+        
+        Remove code related spaces and add a brief description of every
+        available command (every method starting with 'do_' is a command).
+        
+        """
         lines = self.__doc__.split('\n')
         self.__doc__ = lines.pop(0).strip()
         for line in lines:
             self.__doc__ += '\n'
             self.__doc__ += line.strip()
         self.__doc__ += '\n\nCommands:'
+        # Find all methods starting with 'do_'.
         _do_methods = (getattr(self, attr) for attr in dir(self)
                               if (attr.startswith('do_') and
                                  callable(getattr(self, attr))))
+        # Get the first line of the docstring of every command.
         _do_docs = (m.__doc__.split('\n')[0] for m in _do_methods if m.__doc__)
+        # Add those line to the docstring of this class
         for d in _do_docs:
             self.__doc__ += '\n'
             self.__doc__ += d
 
     def handle_key_down(self, ev_type, key, mod, unicode):
+        """Define the basic functionality of a terminal.
+        
+        For now it is possible to type commands, delete characters by pressing
+        backspace and browsing the command history with up and down keys.
+        However, it is not yet possible to move the cursor left or right
+        using arrows.
+        
+        """
         if key == PL.K_BACKSPACE:
+            # Delete one character from the command line.
             self.cmd_line = self.cmd_line[:-1]
             self.hist[-1] = self.cmd_line
         elif key == PL.K_RETURN:
+            # Try to execute a command.
             if not self.execute(self.cmd_line):
+                # Command succeeds so update history and clear the command
+                # line.
                 self.hist[-1] = (self.cmd_line)
                 self.hist.append('')
                 self.hist_idx = len(self.hist) - 1
                 self.cmd_line = ''
         elif key in (PL.K_UP, PL.K_DOWN):
+            # Browse the command history.
             if key == PL.K_UP:
                 idx = max(self.hist_idx - 1, 0)
             else:
@@ -87,15 +131,22 @@ class CommandPrompt(Listener, State):
         else:
             self.cmd_line += unicode
             self.hist[-1] = self.cmd_line
+        # Post an event with the current prompt saved as a string.
         self.post(Event('prompt', prompt=self.prompt + self.cmd_line))
 
     def parse_command(self, cmd):
+        """Split a command using shlex."""
         try:
             return shlex.split(str(cmd))
         except ValueError:
             pass
 
     def execute(self, text):
+        """Execute a command if the relative method if found.
+        
+        Returns True if the command fails.
+        
+        """
         method = None
         args = self.parse_command(text)
         if args:

@@ -14,7 +14,26 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-"""The event system of Yaranullin."""
+"""The event system of Yaranullin.
+
+This is the fondation and main design pattern used in Yaranullin. The general
+idea is taken from http://ezide.com/games/writing-games.html but the
+implementation is different in a number of ways.
+
+The design patter used here is a combination of MVC (Model View Controller)
+and Mediator.
+
+The aim of this desing is to decouple all the elements of the program (the
+game logic, the gui, the network stack, etc...), such that everything is a
+plugin (a Listener class to be specific) and, as such, it can be activated or
+deactivated by simply adding or removing it from a specific global class
+(EventManager) be activated or deactivated by simply adding or removing it
+from a specific global class (EventManager).
+
+Every Listener can send or recive events and so can communicate with other
+Listeners without knowing anything about them.
+
+"""
 
 import sys
 import logging
@@ -32,12 +51,18 @@ class Event(object):
 
     """The class used for all events.
 
-    This is used to broadcast messages to all listeners in all threads.
+    An Event is composed by a mandatory type (a string) and by a variable
+    number of optional arguments.
+
+    A list of all the event types and their arguments can be found
+    in docs/events.md along with a brief description.
+
+    Creating a new event type is as simple as pick up a new name for it
+    and define some handling function in a Listener.
 
     """
 
     def __init__(self, ev_type, **kargs):
-
         self.__dict__.update(**kargs)
         # Ensure that the event type is corrent event if there is a
         # type keyword argument in kargs.
@@ -48,13 +73,15 @@ class EventManager(object):
 
     """Broadcast events to registered listeners.
 
-    Every listener will choose event types to get at creation time.
+    This class is the core of Yaranullin's framework and, as such, is
+    responsible for dispatching all events to the listeners.  There should be
+    only one EventManager in the main thread.
 
     """
 
     def __init__(self):
-        # Couple event types to listeners that want them.
-        # {event_type: [listener_1, listener_2, ...], ...}
+        # Couple event types to their listeners.
+        # {'event_type': [listener_1, listener_2, ...], ...}
         self.events = dict()
         # Global event queue, thread safe thanks to deque.
         self.event_queue = deque()
@@ -62,6 +89,11 @@ class EventManager(object):
         self.free_ids = set(LISTENER_IDS_POOL)
 
     def get_new_uid(self, uid):
+        """Return an available uid.
+        
+        If the provided uid is available, then returns it unchanged. Otherwise
+        returns an randomly chosen uid.
+        """
         if uid in self.free_ids:
             self.free_ids.remove(uid)
             return uid
@@ -70,11 +102,12 @@ class EventManager(object):
             self.free_ids.remove(new_uid)
             return new_uid
         else:
+            # This should never appen since there are 2^16 ids to choose from.
             sys.exit('Max number of listeners reached ('
                      + str(len(LISTENER_IDS_POOL)) + ')')
 
     def attach_listener(self, listener, *wanted_events):
-        """Register a Listener."""
+        """Register a Listener to some events."""
         for event in wanted_events:
             if event in self.events:
                 if listener not in self.events[event]:
@@ -109,7 +142,8 @@ class EventManager(object):
         """Consume and clear the event queue."""
         while len(self.event_queue):
             event = self.event_queue.popleft()
-            # Continue if there is no registered listeners.
+            # Continue if there is no registered listeners for this type
+            # of event.
             if event.ev_type not in self.events:
                 continue
             # Avoid runtime errors for listeners created during
@@ -127,6 +161,20 @@ class Listener(object):
     """Listen to events coming from the Event Manager.
 
     This is just an interface to be subclassed.
+    For example to handle an event called 'this-is-a-test', a method called
+    'handle_this_is_a_test' must be defined in the subclass, taking as
+    arguments the properties of the event.
+
+    For example if the event is defined as:
+
+    e = Event('this-is-a-test', prop=3)
+
+    than the handling function must be:
+
+    def handle_this_is_a_test(ev_type, prop):
+        ...
+
+    Note that the char '-' is always translated to '_'.
 
     """
 
@@ -187,7 +235,7 @@ class EventManagerAndListener(EventManager, Listener):
     Used to isolate some parts of Yaranullin (i.e. network listeners,
     pygame listeners...).
     If independent is True, this class is used to group listeners that goes
-    in another thread.
+    in the same thread.
     It will register to its parent event manager with its own wanted events as
     well as listeners'.
     """
@@ -229,7 +277,8 @@ class EventManagerAndListener(EventManager, Listener):
 
     def post(self, *events):
         """Add an event to the event queue."""
-        # Post downstream only ticks.
+        # Post downstream only ticks, all the other events must go up until
+        # they reach the main EventManager.
         for event in events:
             if event.ev_type == 'tick':
                 if 'tick' in self.wanted_events:
@@ -245,6 +294,9 @@ class EventManagerAndListener(EventManager, Listener):
         # If this EventManager is independent (means it runs on its own
         # thread),then copy the event before using it any further.
         if self.independent:
+            # For some reason deepcopy fails if one of the attributes of the
+            # event is a cStringIO.SringIO class. This is fixed using
+            # StringIO.StringIO instead, but I don't know why.
             event = deepcopy(event)
         # Be notified about wanted events like a regular Listener.
         if event.ev_type in self.wanted_events:
