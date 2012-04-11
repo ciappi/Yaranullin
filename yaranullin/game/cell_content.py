@@ -20,12 +20,16 @@ from yaranullin.event_system import Listener
 
 
 class CellContentInitializationError(Exception):
-    pass
+    """Thrown an exception if there is a placement error inside __init__."""
 
 
 class CellContent(Listener):
 
-    """The content of a cell."""
+    """The content of a cell.
+    
+    It is subclass of Listener but actually use any of the parent methods.
+    
+    """
 
     def __init__(self, board, x, y, width, height, rotated):
         Listener.__init__(self, board)

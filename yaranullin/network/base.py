@@ -14,6 +14,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+"""Base network classes."""
 
 import struct
 import socket
@@ -35,7 +36,7 @@ class EndPoint(object):
     """Sends and receives messages across the network."""
 
     def setup(self):
-        """Initialization stuff."""
+        """Initialize in and out buffers."""
         self.in_buffer = deque()
         self.out_buffer = deque()
 
@@ -58,6 +59,7 @@ class EndPoint(object):
                 logging.debug('Pulling ' + repr(data) + ' from server.')
                 self.in_buffer.append(data)
         except socket.error:
+            # There is no more data available.
             pass
 
     def push(self):
@@ -72,8 +74,10 @@ class EndPoint(object):
 
         Returns the decompressed data.
         """
+        # Get and unpack the lenght of the message.
         lendata = self.recvall(format.size)
         (length,) = format.unpack(lendata)
+        # Get the real data.
         data = self.recvall(length)
         return data
 

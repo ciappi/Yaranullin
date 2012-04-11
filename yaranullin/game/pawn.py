@@ -20,7 +20,13 @@ from yaranullin.game.cell_content import CellContent
 
 class Pawn(CellContent):
 
-    """A PG, an NPG or a monster."""
+    """A PG, an NPG or a monster.
+    
+    Listen to specific pawn events:
+     * game-request-pawn-move
+     * game-request-pawn-place
+    
+    """
 
     def __init__(self, board, name, initiative, x, y, width, height,
                  rotated, uid=None, **kargs):
