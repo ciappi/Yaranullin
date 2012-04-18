@@ -25,7 +25,9 @@ unhandled exceptions.
 
 """
 
-from time import sleep
+import sys
+import traceback
+import time
 
 from yaranullin.event_system import Event, Listener
 
@@ -45,19 +47,22 @@ class CPUSpinner(Listener):
 
     def run(self):
         """Event loop.
-        
+
         Periodically post a 'tick' event so than the corresponding event
         manager can process its event queue.
-        
+
         """
         try:
             while self.keep_going:
                 self.post(Event('tick'))
-                sleep(0.01)
+                time.sleep(0.01)
         except KeyboardInterrupt:
+            pass
+        except:
+            traceback.print_exc(file=sys.stdout)
+        finally:
             # Try to exit cleanly.
-            self.post(Event('quit'))
-            self.post(Event('tick'))
+            self.post(Event('quit'), Event('tick'))
 
     def handle_quit(self, ev_type):
         """This will stop the while loop from running."""

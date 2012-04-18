@@ -14,6 +14,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import sys
+import traceback
 
 import pygame
 import pygame.locals as PL
@@ -40,5 +42,9 @@ class PygameCPUSpinner(CPUSpinner):
                 event = Event('tick', dt=dt)
                 self.post(event)
         except KeyboardInterrupt:
+            pass
+        except:
+            traceback.print_exc(file=sys.stdout)
+        finally:
             self.post(Event('quit'), Event('tick'))
         pygame.quit()

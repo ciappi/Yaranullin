@@ -128,10 +128,4 @@ def main(args):
         print 'Launching the editor...'
         runner = EditorRunner(args)
     if runner:
-        if args.debug:
-            runner.run()
-        else:
-            try:
-                runner.run()
-            except:
-                sys.exit('Unexpected error.')
+        runner.run()
