@@ -46,5 +46,6 @@ class PygameCPUSpinner(CPUSpinner):
         except:
             traceback.print_exc(file=sys.stdout)
         finally:
-            self.post(Event('quit'), Event('tick'))
+            pass
+            #self.post(Event('quit'), Event('tick'))
         pygame.quit()

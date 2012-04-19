@@ -24,7 +24,10 @@ import ConfigParser
 # Global version.
 __version__ = '0.4.3'
 
-HOME_DIR = os.environ['HOME']
+if 'HOME' in os.environ:
+    HOME_DIR = os.environ['HOME']
+else:
+    HOME_DIR = os.path.join(os.environ['HOMEDRIVE'], os.environ['HOMEPATH'])
 YR_DIR = os.path.join(HOME_DIR, '.yaranullin')
 # If YR_DIR do not exist, we are in the source folder.
 if not os.path.exists(YR_DIR):

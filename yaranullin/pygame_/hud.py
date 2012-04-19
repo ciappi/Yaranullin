@@ -35,12 +35,12 @@ class PawnToken(TextLabel):
             color = pygame.colordict.THECOLORS[color]
         TextLabel.__init__(self, event_manager, text=name, font_color=color,
                            font_size=20, font_name='hud_font.ttf')
-        self.uid = uid
+        self.pawn_uid = uid
         self.name = name
         self.initiative = initiative
 
     def handle_game_event_pawn_next(self, ev_type, uid):
-        if self.uid == uid:
+        if self.pawn_uid == uid:
             self.font.set_underline(True)
             self.font.set_italic(True)
         else:
@@ -59,7 +59,7 @@ class HUD(VContainer):
 
     def __init__(self, event_manager, uid, rect):
         VContainer.__init__(self, event_manager, rect)
-        self.uid = uid
+        self.board_uid = uid
         self.active = True
         self.pawns = {}
 
@@ -76,7 +76,7 @@ class HUD(VContainer):
         self.remove(pawn_to_del)
 
     def handle_game_event_board_change(self, ev_type, uid):
-        if self.uid == uid:
+        if self.board_uid == uid:
             self.active = True
         else:
             self.active = False

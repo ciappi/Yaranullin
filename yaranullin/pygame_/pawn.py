@@ -35,7 +35,7 @@ class Pawn(Widget, CacheMixIn):
         Widget.__init__(self, event_manager)
         CacheMixIn.__init__(self)
         self.active = False
-        self.uid = uid
+        self.pawn_uid = uid
         self.name = name
         self.initiative = initiative
         self.x = x
@@ -77,14 +77,14 @@ class Pawn(Widget, CacheMixIn):
 
     def handle_game_event_pawn_next(self, ev_type, uid):
         """Handle a pawn change."""
-        if uid == self.uid:
+        if uid == self.pawn_uid:
             self.active = True
         else:
             self.active = False
 
     def handle_game_event_pawn_updated(self, ev_type, uid, **kargs):
         """Move the pawns."""
-        if self.uid != uid:
+        if self.pawn_uid != uid:
             return
         self.__dict__.update(**kargs)
         self.update_rect()

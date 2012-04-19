@@ -88,16 +88,17 @@ class State(object):
             self.state['boards'] = []
         board = kargs
         # Add default black and white tiles to the board
-        board["tiles"] = []
-        w, h = board["width"], board["height"]
-        for x in xrange(w):
-            for y in xrange(h):
-                if (x + y) % 2 == 0:
-                    board["tiles"].append({"image": "white_tile.png", "x": x,
-                                           "y": y})
-                else:
-                    board["tiles"].append({"image": "black_tile.png", "x": x,
-                                           "y": y})
+        if 'tiles' not in board:
+            board["tiles"] = []
+            w, h = board["width"], board["height"]
+            for x in xrange(w):
+                for y in xrange(h):
+                    if (x + y) % 2 == 0:
+                        board["tiles"].append({"image": "white_tile.png",
+                                               "x": x, "y": y})
+                    else:
+                        board["tiles"].append({"image": "black_tile.png",
+                                               "x": x, "y": y})
         board['pawns'] = []
         self.state['boards'].append(board)
         self.state['active_board_uid'] = board['uid']

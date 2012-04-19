@@ -110,5 +110,5 @@ class Board(EventManagerAndListener):
         if not self.active:
             return
         pawn = self.next_pawn(uid)
-        event = Event('game-event-pawn-next', uid=pawn.uid)
-        self.post(event)
+        if pawn:
+            self.post(Event('game-event-pawn-next', uid=pawn.uid))

@@ -32,7 +32,7 @@ class Board(ScrollableContainer, CacheMixIn):
                  tiles=None, **kargs):
         ScrollableContainer.__init__(self, event_manager, rect)
         CacheMixIn.__init__(self)
-        self.uid = uid
+        self.board_uid = uid
         self.active_pawn_uid = None
         self.name = name
         self.width = width
@@ -83,7 +83,7 @@ class Board(ScrollableContainer, CacheMixIn):
         self.remove(self.pawns[uid])
 
     def handle_game_event_board_change(self, ev_type, uid):
-        if self.uid == uid:
+        if self.board_uid == uid:
             self.active = True
         else:
             self.active = False
