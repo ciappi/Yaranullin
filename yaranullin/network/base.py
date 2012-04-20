@@ -44,7 +44,12 @@ class EndPoint(object):
         """Read a message from the socket."""
         data = ''
         while len(data) < length:
-            more = self.request.recv(length - len(data))
+            # Read at max 4096 bytes. Trying to read all (length -len(data)
+            # has been reported to be an issue on Vista 32 bit because
+            # this number has to be converted to a C long and sometimes it is
+            # too big for that.
+            bytes_to_read = min(4096, length - len(data))
+            more = self.request.recv(bytes_to_read)
             if not more:
                 raise EOFError('socket closed %d bytes into a %d-byte message'
                                % (len(data), length))
