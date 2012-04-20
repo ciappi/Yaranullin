@@ -32,14 +32,14 @@ class Widget(Listener, pygame.sprite.Sprite):
 
     """
 
-    def __init__(self, container, rect=None):
+    def __init__(self, container):
         pygame.sprite.Sprite.__init__(self)
         Listener.__init__(self, container)
-        if rect is None:
-            self.rect = pygame.rect.Rect(0, 0, 0, 0)
-        else:
-            self.rect = rect
-        self.image = pygame.surface.Surface((self.rect.size)).convert()
+        self.rect = pygame.rect.Rect(0, 0, 0, 0)
+
+    @property
+    def image(self):
+        return pygame.surface.Surface((self.rect.size)).convert()
 
     @property
     def abs_pos(self):
@@ -96,10 +96,14 @@ class TextLabel(Widget):
             self.font = pygame.font.SysFont(default, self.font_size)
         self.render_text()
 
+    @property
+    def image(self):
+        return self._image
+
     def render_text(self):
         """Render the text using the given parameters."""
         text = self.text
         color = self.font_color
         # Fallback to default font if needed.
-        self.image = self.font.render(text, True, color)
+        self._image = self.font.render(text, True, color)
         self.rect.size = self.image.get_rect().size

@@ -43,7 +43,6 @@ class Pawn(Widget, CacheMixIn):
         self.width = width
         self.height = height
         self.color = color
-        self.image = image
         self.rotated = rotated
         self.tw = CONFIG.getint('graphics', 'tile-width')
         if self.color is None:
@@ -60,16 +59,20 @@ class Pawn(Widget, CacheMixIn):
         else:
             loader = load_image_with_alpha(size)
             self.set_cached_property('_image', image, loader, default_image)
-        self.image = self._image.copy()
         self.update_rect()
+
+    @property
+    def image(self):
+        if self.rotated:
+            return pygame.transform.rotate(self._image, -90)
+        else:
+            return self._image
 
     def update_rect(self):
         """Update."""
         if self.rotated:
-            self.image = pygame.transform.rotate(self._image, -90)
             width, height = self.height, self.width
         else:
-            self.image = self._image
             width, height = self.width, self.height
         self.rect.size = self.image.get_rect().size
         self.rect.center = (self.x * self.tw + width * self.tw // 2,
