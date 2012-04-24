@@ -16,6 +16,7 @@
 
 """Base network classes."""
 
+import asyncore
 import struct
 import socket
 import threading
@@ -30,65 +31,71 @@ from yaranullin.spinner import CPUSpinner
 
 format = struct.Struct('!I')  # for messages up to 2**32 - 1 in length
 
+STATE_LEN, STATE_BODY = range(2)
 
-class EndPoint(object):
+
+class EndPoint(asyncore.dispatcher):
 
     """Sends and receives messages across the network."""
 
-    def setup(self):
-        """Initialize in and out buffers."""
+    def __init__(self):
+        asyncore.dispatcher.__init__(self)
         self.in_buffer = deque()
         self.out_buffer = deque()
+        self.write_buffer = '' 
+        self.in_chunks = deque()
+        self.len_in_chunks = 0
+        self.state = STATE_LEN
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    def handle_connect(self):
+        pass
+
+    def handle_close(self):
+        self.close()
+
+    def writable(self):
+        if self.write_buffer:
+            return True
+        if self.out_buffer:
+            self.write_buffer = self.out_buffer.popleft()
+            return True
+        return False
+
+    def readable(self):
+        return True
+
+    def handle_write(self):
+        num_sent = self.send(self.write_buffer[:512])
+        self.write_buffer = self.write_buffer[num_sent:]
 
     def recvall(self, length):
-        """Read a message from the socket."""
-        data = ''
-        while len(data) < length:
-            # Read at max 4096 bytes. Trying to read all (length -len(data)
-            # has been reported to be an issue on Vista 32 bit because
-            # this number has to be converted to a C long and sometimes it is
-            # too big for that.
-            bytes_to_read = min(4096, length - len(data))
-            more = self.request.recv(bytes_to_read)
-            if not more:
-                raise EOFError('socket closed %d bytes into a %d-byte message'
-                               % (len(data), length))
-            data += more
-        return data
+        # Read at max 4096 bytes. Trying to read all (length -len(data)
+        # has been reported to be an issue on Vista 32 bit because
+        # this number has to be converted to a C long and sometimes it is
+        # too big for that.
+        to_read = min(length - self.len_in_chunks, 8192)
+        data = self.recv(to_read)
+        if not data:
+            return
+        self.in_chunks.append(data)
+        self.len_in_chunks += len(data)
+        if self.len_in_chunks == length:
+            data = ''.join(self.in_chunks)
+            self.len_in_chunks = 0
+            self.in_chunks.clear()
+            return data
 
-    def pull(self):
-        """Pull all data available from the socket."""
-        try:
-            while True:
-                data = self.get()
-                logging.debug('Pulling ' + repr(data) + ' from server.')
+    def handle_read(self):
+        if self.state == STATE_LEN:
+            data = self.recvall(format.size)
+            if data:
+                self.lendata = format.unpack(data)
+                self.state = STATE_BODY
+        elif self.state == STATE_BODY:
+            data = self.recvall(self.lendata)
+            if data:
                 self.in_buffer.append(data)
-        except socket.error:
-            # There is no more data available.
-            pass
-
-    def push(self):
-        """Push all the data queue to the socket."""
-        while len(self.out_buffer):
-            data = self.out_buffer.popleft()
-            logging.debug('Pushing ' + repr(data) + ' to server.')
-            self.put(data)
-
-    def get(self):
-        """Get a single message from the socket.
-
-        Returns the decompressed data.
-        """
-        # Get and unpack the lenght of the message.
-        lendata = self.recvall(format.size)
-        (length,) = format.unpack(lendata)
-        # Get the real data.
-        data = self.recvall(length)
-        return data
-
-    def put(self, message):
-        """Send a single message to the socket."""
-        self.request.sendall(format.pack(len(message)) + message)
 
 
 class NetworkView(Listener):
