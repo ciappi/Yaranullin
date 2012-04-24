@@ -15,12 +15,15 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-import socket
-from time import sleep
+import time
+import asyncore
 
 from yaranullin.event_system import Event
-from yaranullin.network.base import EndPoint, NetworkView, NetworkController,\
+from yaranullin.network.base import EndPoint, NetworkView, NetworkController, \
                                     NetworkSpinner
+
+
+STATE_DISCONNECTED, STATE_CONNECTING, STATE_CONNECTED = range(3)
 
 
 class ClientNetworkController(NetworkController):
@@ -45,25 +48,24 @@ class ClientNetworkView(NetworkView):
 
 class ClientEndPoint(EndPoint):
 
-    def __init__(self, event_manager, host, port):
-        self.request = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.request.connect((host, port))
-        self.request.setblocking(False)
-        self.setup(event_manager)
+    """Client EndPoint."""
 
-    def setup(self, event_manager):
+    def __init__(self, host, port, view, controller, sock=None, map=None):
         """Setup the client end point."""
-        # Create the queues.
-        EndPoint.setup(self)
-        # Create the view for the network.
-        view = ClientNetworkView(event_manager)
-        view.end_point = self
-        # Create the controller for the network.
-        controller = ClientNetworkController(event_manager)
-        controller.end_point = self
-        # Save a reference for both of them.
+        EndPoint.__init__(self, sock=sock, map=map)
+        # Connect to the server.
+        self.connect((host, port))
         self.view = view
         self.controller = controller
+        self.view.end_point = self
+        self.controller.end_point = self
+
+    def handle_close(self):
+        # Delete every reference to view and controller so that they will be
+        # garbage collected.
+        self.view.end_point = self.controller.end_point = None
+        self.view = self.controller = None
+        EndPoint.handle_close(self)
 
 
 class ClientNetworkSpinner(NetworkSpinner):
@@ -71,12 +73,24 @@ class ClientNetworkSpinner(NetworkSpinner):
     def __init__(self, event_manager):
         NetworkSpinner.__init__(self, event_manager)
         self.end_point = None
+        self.host = None
+        self.port = None
+        self.view = None
+        self.controller = None
+        self.state = STATE_DISCONNECTED
 
     def handle_join(self, ev_type, host, port):
         """Try to join a remote server."""
-        self.end_point = ClientEndPoint(self.event_manager, host, port)
-        event = Event('game-request-update')
-        self.post(event)
+        if not self.end_point:
+            self.host = host
+            self.port = port
+            # Create the view for the network.
+            self.view = ClientNetworkView(self.event_manager)
+            # Create the controller for the network.
+            self.controller = ClientNetworkController(self.event_manager)
+            self.state = STATE_CONNECTING
+            event = Event('game-request-update')
+            self.post(event)
 
     def run_network(self):
         """Network loop.
@@ -84,8 +98,23 @@ class ClientNetworkSpinner(NetworkSpinner):
         Simply pull and push from the socket.
 
         """
+        sockets = {}
         while self.keep_going:
-            if self.end_point is not None:
-                self.end_point.pull()
-                self.end_point.push()
-            sleep(0.01)
+            if self.state == STATE_CONNECTING:
+                self.end_point = ClientEndPoint(self.host, self.port,
+                        self.view, self.controller, map=sockets)
+                self.view = self.controller = None
+            elif self.state == STATE_CONNECTED:
+                # We cannot let asyncore loop forever, otherwise the flag
+                # keep_going is useless.
+                asyncore.loop(timeout=1, count=1, map=sockets)
+            elif self.state == STATE_DISCONNECTED:
+                time.sleep(0.01)
+            else:
+                # should raise an exception
+                pass
+        else:
+            self.state = STATE_DISCONNECTED
+            # Probably we should call handle_close for each socket.
+            for sock in sockets:
+                sock.handle_close()
