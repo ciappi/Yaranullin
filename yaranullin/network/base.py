@@ -38,11 +38,10 @@ class EndPoint(asyncore.dispatcher):
 
     """Sends and receives messages across the network."""
 
-    def __init__(self):
-        asyncore.dispatcher.__init__(self)
+    def __init__(self, sock=None, map=None):
+        asyncore.dispatcher.__init__(self, sock, map)
         self.in_buffer = deque()
         self.out_buffer = deque()
-        self.write_buffer = '' 
         self.in_chunks = deque()
         self.len_in_chunks = 0
         self.state = STATE_LEN
@@ -55,26 +54,23 @@ class EndPoint(asyncore.dispatcher):
         self.close()
 
     def writable(self):
-        if self.write_buffer:
-            return True
-        if self.out_buffer:
-            self.write_buffer = self.out_buffer.popleft()
-            return True
-        return False
+        return self.out_buffer
 
     def readable(self):
         return True
 
     def handle_write(self):
-        num_sent = self.send(self.write_buffer[:512])
-        self.write_buffer = self.write_buffer[num_sent:]
+        num_sent = self.send(self.out_buffer[0])
+        self.out_buffer[0] = self.out_buffer[0][num_sent:]
+        if not self.out_buffer[0]:
+            self.out_buffer.popleft()
 
     def recvall(self, length):
-        # Read at max 4096 bytes. Trying to read all (length -len(data)
+        # Read at max 262144 bytes. Trying to read all (length -len(data)
         # has been reported to be an issue on Vista 32 bit because
         # this number has to be converted to a C long and sometimes it is
         # too big for that.
-        to_read = min(length - self.len_in_chunks, 8192)
+        to_read = min(length - self.len_in_chunks, 262144)
         data = self.recv(to_read)
         if not data:
             return
@@ -165,5 +161,4 @@ class NetworkSpinner(CPUSpinner):
         net_loop_thread.join()
 
     def run_network(self):
-
         pass
