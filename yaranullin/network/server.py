@@ -65,8 +65,8 @@ class ServerNetworkSpinner(NetworkSpinner, asyncore.dispatcher):
 
     def handle_accept(self):
         client_info = self.accept()
-        view = ServerNetworkView(self)
-        controller = ServerNetworkController(self)
+        view = ServerNetworkView(self.event_manager)
+        controller = ServerNetworkController(self.event_manager)
         ServerEndPoint(view, controller, sock=client_info[0],
                 map=self.sockets)
 
