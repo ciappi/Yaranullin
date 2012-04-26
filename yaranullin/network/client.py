@@ -29,7 +29,7 @@ STATE_DISCONNECTED, STATE_CONNECTING, STATE_CONNECTED = range(3)
 
 
 class ClientNetworkController(NetworkController):
-    pass
+    """ Client-side network controller """
 
 
 class ClientNetworkView(NetworkView):
