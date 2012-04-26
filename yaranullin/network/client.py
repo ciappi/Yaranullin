@@ -52,9 +52,9 @@ class ClientEndPoint(EndPoint):
 
     """Client EndPoint."""
 
-    def __init__(self, host, port, view, controller, sock=None, map=None):
+    def __init__(self, host, port, view, controller, sock=None, sockets=None):
         """Setup the client end point."""
-        EndPoint.__init__(self, sock=sock, map=map)
+        EndPoint.__init__(self, sock=sock, map=sockets)
         # Connect to the server.
         self.connect((host, port))
         self.view = view
