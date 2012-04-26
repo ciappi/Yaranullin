@@ -38,8 +38,8 @@ class EndPoint(asyncore.dispatcher):
 
     """Sends and receives messages across the network."""
 
-    def __init__(self, sock=None, map=None):
-        asyncore.dispatcher.__init__(self, sock, map)
+    def __init__(self, sock=None, sockets=None):
+        asyncore.dispatcher.__init__(self, sock, sockets)
         self.in_buffer = deque()
         self.out_buffer = deque()
         self.in_chunks = deque()
