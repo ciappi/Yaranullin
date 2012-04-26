@@ -20,7 +20,6 @@ import asyncore
 import struct
 import socket
 import threading
-import logging
 import bson
 from collections import deque
 
