@@ -140,7 +140,8 @@ class NetworkController(Listener):
                 if self.check_event(event):
                     self.post(event)
 
-    def check_event(self, event):
+    @staticmethod
+    def check_event(event):
         """Check if an event can be posted on the local event manager."""
         return True
 
@@ -162,4 +163,4 @@ class NetworkSpinner(CPUSpinner):
         net_loop_thread.join()
 
     def run_network(self):
-        pass
+        """ Dispatches network events """
