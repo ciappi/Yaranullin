@@ -29,7 +29,7 @@ from yaranullin.event_system import Listener, Event
 from yaranullin.spinner import CPUSpinner
 
 
-format = struct.Struct('!I')  # for messages up to 2**32 - 1 in length
+FORMAT = struct.Struct('!I')  # for messages up to 2**32 - 1 in length
 
 STATE_LEN, STATE_BODY = range(2)
 
@@ -84,9 +84,9 @@ class EndPoint(asyncore.dispatcher):
 
     def handle_read(self):
         if self.state == STATE_LEN:
-            data = self.recvall(format.size)
+            data = self.recvall(FORMAT.size)
             if data:
-                self.lendata = format.unpack(data)
+                self.lendata = FORMAT.unpack(data)
                 self.state = STATE_BODY
         elif self.state == STATE_BODY:
             data = self.recvall(self.lendata)
