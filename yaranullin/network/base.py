@@ -140,8 +140,7 @@ class NetworkController(Listener):
                 if self.check_event(event):
                     self.post(event)
 
-    @staticmethod
-    def check_event(event):
+    def check_event(self, event):
         """Check if an event can be posted on the local event manager."""
         return True
 
