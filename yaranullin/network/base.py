@@ -44,6 +44,7 @@ class EndPoint(asyncore.dispatcher):
         self.in_chunks = deque()
         self.len_in_chunks = 0
         self.state = STATE_LEN
+        self.lendata = 0
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def handle_connect(self):
