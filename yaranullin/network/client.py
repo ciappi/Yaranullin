@@ -71,6 +71,7 @@ class ClientEndPoint(EndPoint):
 
 
 class ClientNetworkSpinner(NetworkSpinner):
+    """ Keeps client-side network running """
 
     def __init__(self, event_manager):
         NetworkSpinner.__init__(self, event_manager)
