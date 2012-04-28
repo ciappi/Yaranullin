@@ -123,24 +123,22 @@ class NetworkController(Listener):
         self.consume_in_queue()
 
     def consume_in_queue(self):
-        """Process the event queue.
-
-        We trust we don't get stuck in this loop because the
-        network is much slower to fill the queue than we are able to
-        empty it.
-
-        """
+        """Process the event queue."""
         if self.end_point is not None:
+            # We trust we don't get stuck in this loop because the
+            # network is much slower to fill the queue than we are able to
+            # empty it.
             while len(self.end_point.in_buffer):
                 data = self.end_point.in_buffer.popleft()
                 #event = loads(data, object_hook=decode)
                 event = Event(**bson.loads(data))
-                if self.check_event(event):
+                if check_event(event):
                     self.post(event)
 
-    def check_event(self, event):
-        """Check if an event can be posted on the local event manager."""
-        return True
+
+def check_event(event):
+    """Check if an event can be posted on the local event manager."""
+    return True
 
 
 class NetworkSpinner(CPUSpinner):
