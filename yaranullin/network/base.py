@@ -45,6 +45,7 @@ class EndPoint(asyncore.dispatcher):
         self.len_in_chunks = 0
         self.state = STATE_LEN
         self.lendata = 0
+        # XXX remember IPv6...
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def handle_connect(self):
@@ -55,9 +56,6 @@ class EndPoint(asyncore.dispatcher):
 
     def writable(self):
         return self.out_buffer
-
-    def readable(self):
-        return True
 
     def handle_write(self):
         num_sent = self.send(self.out_buffer[0])
