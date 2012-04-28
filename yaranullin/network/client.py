@@ -84,6 +84,7 @@ class ClientNetworkSpinner(NetworkSpinner):
 
     def handle_join(self, ev_type, host, port):
         """Try to join a remote server."""
+        # XXX we should reconnect if the connection goes down.
         if not self.end_point:
             self.host = host
             self.port = port
@@ -96,28 +97,20 @@ class ClientNetworkSpinner(NetworkSpinner):
             self.post(event)
 
     def run_network(self):
-        """Network loop.
-
-        Simply pull and push from the socket.
-
-        """
-        sockets = {}
+        """Network loop."""
         while self.keep_going:
             if self.state == STATE_CONNECTING:
                 self.end_point = ClientEndPoint(self.host, self.port,
-                        self.view, self.controller, map=sockets)
+                        self.view, self.controller)
                 self.view = self.controller = None
             elif self.state == STATE_CONNECTED:
                 # We cannot let asyncore loop forever, otherwise the flag
                 # keep_going is useless.
-                asyncore.loop(timeout=1, count=1, map=sockets)
+                asyncore.poll(timeout=1)
             elif self.state == STATE_DISCONNECTED:
+                # Sleep a little to prevent a furious loop while the client
+                # is disconnected.
                 time.sleep(0.01)
             else:
-                # should raise an exception
+                # XXX should raise an exception
                 pass
-        else:
-            self.state = STATE_DISCONNECTED
-            # Probably we should call handle_close for each socket.
-            for sock in sockets:
-                sock.handle_close()
