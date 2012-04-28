@@ -58,30 +58,22 @@ class ServerNetworkSpinner(NetworkSpinner, asyncore.dispatcher):
     def __init__(self, event_manager, server_address):
         NetworkSpinner.__init__(self, event_manager)
         asyncore.dispatcher.__init__(self)
+        # XXX Remember IPv6
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.bind(server_address)
         self.listen(5)
-        self.sockets = {}
 
     def handle_accept(self):
         client_info = self.accept()
         view = ServerNetworkView(self.event_manager)
         controller = ServerNetworkController(self.event_manager)
-        ServerEndPoint(view, controller, sock=client_info[0],
-                map=self.sockets)
+        ServerEndPoint(view, controller, sock=client_info[0])
 
     def run_network(self):
 
-        """Network loop.
+        """Network loop."""
 
-        Simply pull and push from the socket.
-
-        """
         while self.keep_going:
             # We cannot let asyncore loop forever, otherwise the flag
             # keep_going is useless.
-            asyncore.loop(timeout=1, count=1, map=self.sockets)
-        else:
-            # Probably we should call handle_close for each socket.
-            for sock in self.sockets:
-                sock.handle_close()
+            asyncore.poll(timeout=1)
