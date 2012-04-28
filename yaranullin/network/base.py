@@ -65,7 +65,7 @@ class EndPoint(asyncore.dispatcher):
 
     def recvall(self, length):
         """ Receives a whole message """
-        # Read at most 262144 bytes. Trying to read all (length -len(data)
+        # Read at most 262144 bytes. Trying to read all (length -len(data))
         # has been reported to be an issue on Vista 32 bit because
         # this number has to be converted to a C long and sometimes it is
         # too big for that.
