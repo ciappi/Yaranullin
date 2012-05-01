@@ -1,4 +1,4 @@
-# yaranullin/editor/control.py
+# yaranullin/cmd_/control.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
