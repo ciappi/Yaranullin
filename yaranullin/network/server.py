@@ -60,6 +60,7 @@ class ServerNetworkSpinner(NetworkSpinner, asyncore.dispatcher):
         asyncore.dispatcher.__init__(self)
         # XXX Remember IPv6
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.set_reuse_addr()
         self.bind(server_address)
         self.listen(5)
 
