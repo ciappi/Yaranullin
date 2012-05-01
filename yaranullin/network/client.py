@@ -28,6 +28,23 @@ from yaranullin.network.base import EndPoint, NetworkView, NetworkController, \
 STATE_DISCONNECTED, STATE_CONNECTING, STATE_CONNECTED = range(3)
 
 
+class State(object):
+
+    def __init__(self, state):
+        self._state = state
+
+    def get_state(self):
+        """Return the current state"""
+        return self._state
+
+    def set_state(self, state):
+        """Set the internal state to a new value"""
+        self._state = state
+
+
+STATE = State(STATE_DISCONNECTED)
+
+
 class ClientNetworkController(NetworkController):
     """ Client-side network controller """
 
@@ -52,9 +69,9 @@ class ClientEndPoint(EndPoint):
 
     """Client EndPoint."""
 
-    def __init__(self, host, port, view, controller, sock=None, sockets=None):
+    def __init__(self, host, port, view, controller):
         """Setup the client end point."""
-        EndPoint.__init__(self, sock, sockets)
+        EndPoint.__init__(self)
         # Connect to the server.
         self.connect((host, port))
         self.view = view
@@ -65,9 +82,10 @@ class ClientEndPoint(EndPoint):
     def handle_close(self):
         # Delete every reference to view and controller so that they will be
         # garbage collected.
+        EndPoint.handle_close(self)
         self.view.end_point = self.controller.end_point = None
         self.view = self.controller = None
-        EndPoint.handle_close(self)
+        STATE.set_state(STATE_DISCONNECTED)
 
 
 class ClientNetworkSpinner(NetworkSpinner):
@@ -80,36 +98,40 @@ class ClientNetworkSpinner(NetworkSpinner):
         self.port = None
         self.view = None
         self.controller = None
-        self.state = STATE_DISCONNECTED
 
     def handle_join(self, ev_type, host, port):
         """Try to join a remote server."""
-        # XXX we should reconnect if the connection goes down.
-        if not self.end_point:
+        # We should reconnect if the connection goes down but
+        # prevent a reconnection is connection is ok.
+        state = STATE.get_state()
+        if not self.end_point and state == STATE_DISCONNECTED:
             self.host = host
             self.port = port
             # Create the view for the network.
             self.view = ClientNetworkView(self.event_manager)
             # Create the controller for the network.
             self.controller = ClientNetworkController(self.event_manager)
-            self.state = STATE_CONNECTING
+            STATE.set_state(STATE_CONNECTING)
             event = Event('game-request-update')
             self.post(event)
 
     def run_network(self):
         """Network loop."""
         while self.keep_going:
-            if self.state == STATE_CONNECTING:
+            state = STATE.get_state()
+            if state == STATE_CONNECTING:
                 self.end_point = ClientEndPoint(self.host, self.port,
                         self.view, self.controller)
-                self.view = self.controller = None
-            elif self.state == STATE_CONNECTED:
+                self.controller = self.view = None
+                STATE.set_state(STATE_CONNECTED)
+            elif state == STATE_CONNECTED:
                 # We cannot let asyncore loop forever, otherwise the flag
                 # keep_going is useless.
                 asyncore.poll(timeout=1)
-            elif self.state == STATE_DISCONNECTED:
-                # Sleep a little to prevent a furious loop while the client
-                # is disconnected.
+            elif state == STATE_DISCONNECTED:
+                # Ensure that an unused socket can be garbage collected
+                self.end_point = None
+                # Sleep a little to prevent a furious while loop 
                 time.sleep(0.01)
             else:
                 # XXX should raise an exception
