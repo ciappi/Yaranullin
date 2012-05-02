@@ -1,4 +1,4 @@
-# yaranullin/editor/__init__.py
+# yaranullin/cmd_/__init__.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #

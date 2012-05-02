@@ -53,6 +53,7 @@ class CPUSpinner(Listener):
 
         """
         try:
+            self.post(Event('start'))
             while self.keep_going:
                 self.post(Event('tick'))
                 time.sleep(0.01)

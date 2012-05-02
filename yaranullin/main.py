@@ -28,7 +28,7 @@ from yaranullin.pygame_.base.spinner import PygameCPUSpinner
 from yaranullin.network.server import ServerNetworkSpinner
 from yaranullin.network.client import ClientNetworkSpinner
 from yaranullin.spinner import CPUSpinner
-from yaranullin.editor.view import PygcursesGUI
+from yaranullin.cmd_.command_prompt import CommandPrompt
 
 
 class ServerRunner(object):
@@ -55,6 +55,7 @@ class ServerRunner(object):
         if args.game:
             event = Event('game-load', dname=args.game)
             self.main_event_manager.post(event)
+        self.command_prompt = CommandPrompt(self.main_event_manager)
 
     def run(self):
         self.main_cpu_spinner.run()
@@ -94,38 +95,13 @@ class ClientRunner(object):
         self.pygame_thread.join()
 
 
-class EditorRunner(object):
-
-    def __init__(self, args):
-        self.main_event_manager = EventManager()
-        self.main_cpu_spinner = CPUSpinner(self.main_event_manager)
-        self.game = Game(self.main_event_manager)
-        self.state = ServerState(self.game)
-        if args.game:
-            event = Event('game-load', dname=args.game)
-            self.main_event_manager.post(event)
-        self.pygame_gui = PygcursesGUI(self.main_event_manager)
-        self.pygame_spinner = PygameCPUSpinner(self.pygame_gui)
-        self.pygame_thread = threading.Thread(target=self.pygame_spinner.run)
-
-    def run(self):
-        self.pygame_thread.start()
-        self.main_cpu_spinner.run()
-        self.pygame_thread.join()
-
-
 def main(args):
 
     runner = None
     mode = args.mode
     if mode == 'server':
-        print 'Launching a server...'
         runner = ServerRunner(args)
     elif mode == 'client':
-        print 'Launching a client...'
         runner = ClientRunner(args)
-    elif mode == 'editor':
-        print 'Launching the editor...'
-        runner = EditorRunner(args)
     if runner:
         runner.run()
