@@ -15,11 +15,10 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-from time import sleep
-from SocketServer import ThreadingTCPServer, BaseRequestHandler
+import socket
+import asyncore
 
-from yaranullin.spinner import CPUSpinner
-from yaranullin.network.base import EndPoint, NetworkView, NetworkController,\
+from yaranullin.network.base import EndPoint, NetworkView, NetworkController, \
                                     NetworkSpinner
 
 
@@ -36,62 +35,48 @@ class ServerNetworkView(NetworkView):
     handle_resource_update = NetworkView.add_to_out_queue
 
 
-class ServerEndPoint(BaseRequestHandler, EndPoint):
+class ServerEndPoint(EndPoint):
 
-    def setup(self):
+    def __init__(self, view, controller, sock=None, map=None):
         """Setup a server end point for every connected client."""
-        # Create in and out queues.
-        EndPoint.setup(self)
-        self.request.setblocking(False)
+        EndPoint.__init__(self, sock=sock, map=map)
         # Create the view of the connected client.
-        view = ServerNetworkView(self.server.event_manager)
-        view.end_point = self
-        # Create the controller of the connected client.
-        controller = ServerNetworkController(self.server.event_manager)
-        controller.end_point = self
-        # Save a reference to them.
         self.view = view
+        self.view.end_point = self
+        # Create the controller of the connected client.
         self.controller = controller
-        self.keep_going = True
+        self.controller.end_point = self
 
-    def handle(self):
-        """Handle the connection.
-
-        Simply pull and push data from and to the socket.
-        Exit the loop if EOFError is raised (the client drop the
-        connection) and the get a quit event from Yaranullin.
-
-        """
-        try:
-            while self.keep_going:
-                self.pull()
-                self.push()
-                sleep(0.01)
-        except EOFError:
-            pass
-
-    def handle_quit(self, ev_type):
-
-        self.keep_going = False
+    def handle_close(self):
+        self.view.end_point = self.controller.end_point = None
+        self.view = self.controller = None
+        EndPoint.handle_close(self)
 
 
-class ServerNetworkSpinner(NetworkSpinner, ThreadingTCPServer):
-
-    allow_reuse_address = True
-    daemon_threads = True
+class ServerNetworkSpinner(NetworkSpinner, asyncore.dispatcher):
 
     def __init__(self, event_manager, server_address):
-        ThreadingTCPServer.__init__(self,
-                                    server_address,
-                                    ServerEndPoint,
-                                    bind_and_activate=True)
-        CPUSpinner.__init__(self, event_manager)
+        NetworkSpinner.__init__(self, event_manager)
+        asyncore.dispatcher.__init__(self)
+        # XXX Remember IPv6
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.set_reuse_addr()
+        self.bind(server_address)
+        self.listen(5)
+
+    def handle_accept(self):
+        client_info = self.accept()
+        if client_info is None:
+            return
+        view = ServerNetworkView(self.event_manager)
+        controller = ServerNetworkController(self.event_manager)
+        ServerEndPoint(view, controller, sock=client_info[0])
 
     def run_network(self):
 
-        self.serve_forever()
+        """Network loop."""
 
-    def handle_quit(self, ev_type):
-
-        self.keep_going = False
-        self.shutdown()
+        while self.keep_going:
+            # We cannot let asyncore loop forever, otherwise the flag
+            # keep_going is useless.
+            asyncore.poll(timeout=1)
