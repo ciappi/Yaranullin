@@ -1,4 +1,4 @@
-# yaranullin/cmd_/control.py
+# yaranullin/cmd_/command_prompt.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -16,196 +16,134 @@
 
 """Control classes for the game editor."""
 
-import os
-import shlex
+import cmd
+import collections
+import threading
+import time
 
-import pygame.locals as PL
-
+from yaranullin.config import __version__
 from yaranullin.event_system import Listener, Event
 from yaranullin.game.state import State
-from yaranullin.config import __version__, YR_DIR
 
 
-class CommandPrompt(Listener, State):
+class CommandPrompt(cmd.Cmd, State, Listener):
 
     """Yaranullin's shell.
     
-    This class is similar to the Cmd framework of Python but it fits better to
+    This class takes the Cmd framework of Python and fits it to
     Yaranullin's event system.
 
     Basically it defines a set of commands to modify the parameters of a game,
     i.e. adding/remove a board, adding/remove a pawn and so on.
-
-    It tries to be as cross platform as possible, so it do not use readline or
-    ncurses which are specific to Unixes.
-
-    For now, apart from a very basic set of commands, it implements an help
-    system and an history of the used commands (saved across different
-    sessions).
-
-    This class do not implements any graphic functions.
-    
     """
 
-    prompt = 'yrn$ '
-    fhist = os.path.join(YR_DIR, 'history.log')
+    prompt = 'yrn> '
+    intro = ('Yaranullin\'s server, version %s\nType "?" or "help" for help;\n'
+            'Type "q" to exit.' % __version__)
 
     def __init__(self, event_manager):
-        Listener.__init__(self, event_manager)
+        cmd.Cmd.__init__(self)
         State.__init__(self)
-        self.cmd_line = ''
-        self.post(Event('prompt', prompt=self.prompt))
-        self.generate_main_doc_string()
-        # Tries to load the command history from disk.
+        Listener.__init__(self, event_manager)
+        self.cmdqueue = collections.deque()
+        self.keep_going = True
+        self.parsing_commands = False
+
+    def cmdloop(self, intro=None):
+        """cmdloop"""
+
+        self.preloop()
+        if self.use_rawinput and self.completekey:
+            try:
+                import readline
+                self.old_completer = readline.get_completer()
+                readline.set_completer(self.complete)
+                readline.parse_and_bind(self.completekey+": complete")
+            except ImportError:
+                pass
         try:
-            with open(self.fhist) as f:
-                self.hist = (f.read()).split('\n')
-        except IOError:
-            self.hist = ['', ]
-        self.hist_idx = len(self.hist) - 1
+            if intro is not None:
+                self.intro = intro
+            if self.intro:
+                self.stdout.write(str(self.intro)+"\n")
+            while True:
+                if self.parsing_commands:
+                    # Do not prompt the user for input because other threads
+                    # are processing commands and printing stuff on the
+                    # screen.
+                    time.sleep(0.001)
+                    continue
+                if not self.keep_going:
+                    # If we use 'while self.keep_going:', there could be a
+                    # condition where the user gets the prompt after issuing a
+                    # quit command.
+                    break
+                if self.use_rawinput:
+                    try:
+                        line = raw_input(self.prompt)
+                    except EOFError:
+                        line = 'EOF'
+                else:
+                    self.stdout.write(self.prompt)
+                    self.stdout.flush()
+                    line = self.stdin.readline()
+                    if not len(line):
+                        line = 'EOF'
+                    else:
+                        line = line.rstrip('\r\n')
+                if line:
+                    self.parsing_commands = True
+                    self.cmdqueue.append(line)
+            self.postloop()
+        finally:
+            if self.use_rawinput and self.completekey:
+                try:
+                    import readline
+                    readline.set_completer(self.old_completer)
+                except ImportError:
+                    pass
+
+    def handle_start(self, ev_type):
+        threading.Thread(target=self.cmdloop).start()
 
     def handle_quit(self, ev_type):
-        """Save history upon quit."""
-        # FIXME: the lenght of the history should be limited, maybe using a
-        # deque instead of a simple list.
-        with open(self.fhist, 'w+a') as f:
-            for line in self.hist:
-                if line:
-                    f.write(line)
-                    f.write('\n')
+        self.keep_going = False
 
-    def generate_main_doc_string(self):
-        """Refactors this class docstring.
-        
-        Remove code related spaces and add a brief description of every
-        available command (every method starting with 'do_' is a command).
-        
-        """
-        lines = self.__doc__.split('\n')
-        self.__doc__ = lines.pop(0).strip()
-        for line in lines:
-            self.__doc__ += '\n'
-            self.__doc__ += line.strip()
-        self.__doc__ += '\n\nCommands:'
-        # Find all methods starting with 'do_'.
-        _do_methods = (getattr(self, attr) for attr in dir(self)
-                              if (attr.startswith('do_') and
-                                 callable(getattr(self, attr))))
-        # Get the first line of the docstring of every command.
-        _do_docs = (m.__doc__.split('\n')[0] for m in _do_methods if m.__doc__)
-        # Add those line to the docstring of this class
-        for d in _do_docs:
-            self.__doc__ += '\n'
-            self.__doc__ += d
+    def handle_tick(self, ev_type):
+        while self.cmdqueue:
+            line = self.cmdqueue.popleft()
+            line = self.precmd(line)
+            stop = self.onecmd(line)
+            stop = self.postcmd(stop, line)
+            if stop:
+                self.post(Event('quit'))
+                self.keep_going = False
+                break
+        self.parsing_commands = False
 
-    def handle_key_down(self, ev_type, key, mod, unicode):
-        """Define the basic functionality of a terminal.
-        
-        For now it is possible to type commands, delete characters by pressing
-        backspace and browsing the command history with up and down keys.
-        However, it is not yet possible to move the cursor left or right
-        using arrows.
-        
-        """
-        if key == PL.K_BACKSPACE:
-            # Delete one character from the command line.
-            self.cmd_line = self.cmd_line[:-1]
-            self.hist[-1] = self.cmd_line
-        elif key == PL.K_RETURN:
-            # Try to execute a command.
-            if not self.execute(self.cmd_line):
-                # Command succeeds so update history and clear the command
-                # line.
-                self.hist[-1] = (self.cmd_line)
-                self.hist.append('')
-                self.hist_idx = len(self.hist) - 1
-                self.cmd_line = ''
-        elif key in (PL.K_UP, PL.K_DOWN):
-            # Browse the command history.
-            if key == PL.K_UP:
-                idx = max(self.hist_idx - 1, 0)
-            else:
-                idx = min(self.hist_idx + 1, len(self.hist) - 1)
-            self.cmd_line = self.hist[idx]
-            self.hist_idx = idx
-        else:
-            self.cmd_line += unicode
-            self.hist[-1] = self.cmd_line
-        # Post an event with the current prompt saved as a string.
-        self.post(Event('prompt', prompt=self.prompt + self.cmd_line))
+    def do_EOF(self, line):
+        """Shutdown the server"""
+        return True
 
-    def parse_command(self, cmd):
-        """Split a command using shlex."""
-        try:
-            return shlex.split(str(cmd))
-        except ValueError:
-            pass
+    do_quit = do_q = do_exit = do_EOF
 
-    def execute(self, text):
-        """Execute a command if the relative method if found.
-        
-        Returns True if the command fails.
-        
-        """
-        method = None
-        args = self.parse_command(text)
-        if args:
-            command = args.pop(0)
-            if hasattr(self, 'do_' + command):
-                method = getattr(self, 'do_' + command)
-        if callable(method):
-            method(args)
-        else:
-            return True
+    def do_version(self):
+        """Display version information"""
+        print __version__
 
-    def do_version(self, args):
-        """version - display program version."""
-        self.post(Event('print', text=__version__))
-
-    def do_help(self, args):
-        """help - get help for available commands.
-        Usage: help [command]
-        """
-        help_str = ''
-        n = len(args)
-        if n == 1:
-            arg = args.pop()
-            try:
-                method = getattr(self, 'do_' + arg)
-                if not callable(method):
-                    raise AttributeError
-            except AttributeError:
-                help_str = "Unknown command '" + str(arg) + "'"
-            else:
-                doc = method.__doc__ if method.__doc__ else ''
-                lines = doc.split('\n')
-                for line in lines:
-                    help_str += line.strip()
-                    help_str += '\n'
-        elif n == 0:
-            help_str = self.__doc__
-        self.post(Event('print', text=help_str))
-
-    def do_quit(self, args):
-        """quit - quit Yaranullin."""
-        self.post(Event('quit'))
-
-    def do_clear(self, args):
-        """clear - clear the output window."""
-        self.post(Event('print', text=''))
-
-    def do_save(self, args):
-        """save - save the state of the game to disk."""
+    def do_save(self):
+        """Save the state of the game to disk"""
         self.post(Event('game-save'))
 
     def do_boards(self, args):
-        """boards - manage boards.
+        """Manage boards
         Usage: board [commands] [args]
         boards - list all the boards
         boards 'uid' - change the active board
         boards add 'name' 'width' 'height' - add a board
         boards del 'uid' - delete a board from the current board
         """
+        args = args.split()
         n = len(args)
         if n == 0:
             # Just list the boards in the game, if any.
@@ -218,7 +156,7 @@ class CommandPrompt(Listener, State):
                 if board["uid"] == self.state['active_board_uid']:
                     text += ' * '
                 text += board['name'] + '    uid: ' + str(board['uid']) + '\n'
-            self.post(Event('print', text=text))
+            print text
         elif n == 1:
             try:
                 uid = int(args.pop())
@@ -237,15 +175,16 @@ class CommandPrompt(Listener, State):
                     self.post(Event('game-event-board-del',
                                     uid=int(args.pop())))
         else:
-            return True
+            print 'Bad arguments'
 
     def do_pawns(self, args):
-        """pawns - manage pawns.
+        """Manage pawns
         Usage: pawns [commands] [args]
         pawns - list all pawns
         pawns add 'name' 'x' 'y' 'width' 'height' - add a new pawn
         pawns del 'uid' - delete a pawn from the current board
         """
+        args = args.split()
         n = len(args)
         if n == 0:
             text = ''
@@ -256,7 +195,7 @@ class CommandPrompt(Listener, State):
                 pawns = []
             for pawn in pawns:
                 text += pawn['name'] + '    uid: ' + str(pawn['uid']) + '\n'
-            self.post(Event('print', text=text))
+            print text
         elif n >= 2:
             cmd = args.pop(0)
             if cmd == 'add':
@@ -273,11 +212,12 @@ class CommandPrompt(Listener, State):
             return True
 
     def do_tile(self, args):
-        """tile - get or set a tile.
+        """Manage tiles
         Usage: tile 'x' 'y' [image]
         tile 'x' 'y' - show the name of the tile at x, y
         tile 'x' 'y' 'image' - set the tile at x, y to image
         """
+        args = args.split()
         n = len(args)
         if n == 2:
             x, y = int(args[0]), int(args[1])
@@ -288,7 +228,7 @@ class CommandPrompt(Listener, State):
                 if (x, y) == pos:
                     text = tile["image"]
                     break
-            self.post(Event('print', text=text))
+            print text
         elif n == 3:
             x, y = int(args[0]), int(args[1])
             img = args[2]
