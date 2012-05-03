@@ -59,6 +59,12 @@ class CmdSpinner(cmd.Cmd, CPUSpinner, State):
         CPUSpinner.__init__(self, event_manager)
         self.cmdqueue = Deque()
 
+    def run(self):
+        t = threading.Thread(target=self.cmdloop)
+        t.start()
+        CPUSpinner.run(self)
+        t.join()
+
     def postloop(self):
         self.post(Event('quit'))
 

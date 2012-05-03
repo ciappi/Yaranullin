@@ -58,10 +58,7 @@ class ServerRunner(object):
             self.main_event_manager.post(event)
 
     def run(self):
-        yrn_thread = threading.Thread(target=self.main_cpu_spinner.run)
-        yrn_thread.start()
-        self.main_cpu_spinner.cmdloop()
-        yrn_thread.join()
+        self.main_cpu_spinner.run()
 
 
 class ClientRunner(object):
