@@ -28,7 +28,7 @@ from yaranullin.pygame_.base.spinner import PygameCPUSpinner
 from yaranullin.network.server import ServerNetworkSpinner
 from yaranullin.network.client import ClientNetworkSpinner
 from yaranullin.spinner import CPUSpinner
-from yaranullin.cmd_.command_prompt import CommandPrompt
+from yaranullin.cmd_.command_prompt import CmdSpinner
 
 
 class ServerRunner(object):
@@ -48,14 +48,14 @@ class ServerRunner(object):
             port = args.port
         else:
             port = CONFIG.getint('network', 'port')
-        self.main_cpu_spinner = ServerNetworkSpinner(self.main_event_manager,
-                                                     ('', port))
+        self.main_cpu_spinner = CmdSpinner(self.main_event_manager)
+        #self.main_cpu_spinner = ServerNetworkSpinner(self.main_event_manager,
+        #                                             ('', port))
         self.game = Game(self.main_event_manager)
         self.state = ServerState(self.game)
         if args.game:
             event = Event('game-load', dname=args.game)
             self.main_event_manager.post(event)
-        self.command_prompt = CommandPrompt(self.main_event_manager)
 
     def run(self):
         self.main_cpu_spinner.run()
