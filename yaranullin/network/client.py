@@ -117,8 +117,6 @@ class ClientNetworkWrapper(NetworkWrapper):
             # Create the controller for the network.
             self.controller = ClientNetworkController(self.event_manager)
             STATE.set_state(STATE_CONNECTING)
-            event = Event('game-request-update')
-            self.post(event)
 
     def run_network(self):
         """Network loop."""
@@ -129,6 +127,8 @@ class ClientNetworkWrapper(NetworkWrapper):
                         self.view, self.controller)
                 self.controller = self.view = None
                 STATE.set_state(STATE_CONNECTED)
+                event = Event('game-request-update')
+                self.post(event)
             elif state == STATE_CONNECTED:
                 # We cannot let asyncore loop forever, otherwise the flag
                 # keep_going is useless.
