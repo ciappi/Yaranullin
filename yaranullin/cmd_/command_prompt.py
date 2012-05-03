@@ -22,8 +22,7 @@ import threading
 import time
 
 from yaranullin.config import __version__
-from yaranullin.event_system import Event
-from yaranullin.spinner import CPUSpinner
+from yaranullin.event_system import Event, Listener
 from yaranullin.game.state import State
 
 
@@ -38,7 +37,7 @@ class Deque(collections.deque):
                 str(idx))
 
 
-class CmdSpinner(cmd.Cmd, CPUSpinner, State):
+class CmdWrapper(cmd.Cmd, Listener, State):
 
     """Yaranullin's shell.
     
@@ -56,21 +55,20 @@ class CmdSpinner(cmd.Cmd, CPUSpinner, State):
     def __init__(self, event_manager):
         cmd.Cmd.__init__(self)
         State.__init__(self)
-        CPUSpinner.__init__(self, event_manager)
+        Listener.__init__(self, event_manager)
         self.cmdqueue = Deque()
+        self.cmd_thread = None
 
-    def run(self):
-        t = threading.Thread(target=self.cmdloop)
-        t.start()
-        CPUSpinner.run(self)
-        t.join()
+    def handle_start(self, ev_type):
+        self.cmd_thread = threading.Thread(target=self.cmdloop)
+        self.cmd_thread.start()
 
     def postloop(self):
         self.post(Event('quit'))
 
     def handle_quit(self, ev_type):
-        CPUSpinner.handle_quit(self, ev_type)
         self.cmdqueue.append('EOF')
+        self.cmd_thread.join()
 
     def do_EOF(self, line):
         """Shutdown the server"""
