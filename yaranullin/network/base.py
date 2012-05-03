@@ -25,7 +25,6 @@ from collections import deque
 
 #from utils import encode, decode
 from yaranullin.event_system import Listener, Event
-from yaranullin.spinner import CPUSpinner
 
 
 FORMAT = struct.Struct('!I')  # for messages up to 2**32 - 1 in length
@@ -141,21 +140,22 @@ def check_event(event):
     return True
 
 
-class NetworkSpinner(CPUSpinner):
+class NetworkWrapper(Listener):
 
-    """Spinner for the network thread."""
+    """Wrapper for the network thread."""
 
-    def run(self):
-        """Main loop.
+    def __init__(self, event_manager):
+        Listener.__init__(self, event_manager)
+        self.thread = None
 
-        Starts the regular CPUSpinner loop to process Yaranullin events as
-        well as a loop regulary sending and receiving data from the network.
+    def handle_start(self, ev_type):
+        """Run network loop"""
+        self.thread = threading.Thread(target=self.run_network)
+        self.thread.start()
 
-        """
-        net_loop_thread = threading.Thread(target=self.run_network)
-        net_loop_thread.start()
-        CPUSpinner.run(self)
-        net_loop_thread.join()
+    def handle_quit(self, ev_type):
+        """Join network loop"""
+        self.thread.join()
 
     def run_network(self):
-        """ Dispatches network events """
+        """Dispatches network events"""
