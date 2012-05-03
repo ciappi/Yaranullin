@@ -22,7 +22,7 @@ import asyncore
 
 from yaranullin.event_system import Event
 from yaranullin.network.base import EndPoint, NetworkView, NetworkController, \
-                                    NetworkSpinner
+                                    NetworkWrapper
 
 
 STATE_DISCONNECTED, STATE_CONNECTING, STATE_CONNECTED = range(3)
@@ -88,16 +88,21 @@ class ClientEndPoint(EndPoint):
         STATE.set_state(STATE_DISCONNECTED)
 
 
-class ClientNetworkSpinner(NetworkSpinner):
+class ClientNetworkWrapper(NetworkWrapper):
     """ Keeps client-side network running """
 
     def __init__(self, event_manager):
-        NetworkSpinner.__init__(self, event_manager)
+        NetworkWrapper.__init__(self, event_manager)
         self.end_point = None
         self.host = None
         self.port = None
         self.view = None
         self.controller = None
+        self.keep_going = True
+
+    def handle_quit(self, ev_type):
+        self.keep_going = False
+        NetworkWrapper.handle_quit(self, ev_type)
 
     def handle_join(self, ev_type, host, port):
         """Try to join a remote server."""

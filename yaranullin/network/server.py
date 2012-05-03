@@ -19,7 +19,7 @@ import socket
 import asyncore
 
 from yaranullin.network.base import EndPoint, NetworkView, NetworkController, \
-                                    NetworkSpinner
+                                    NetworkWrapper
 
 
 class ServerNetworkController(NetworkController):
@@ -37,9 +37,9 @@ class ServerNetworkView(NetworkView):
 
 class ServerEndPoint(EndPoint):
 
-    def __init__(self, view, controller, sock=None, map=None):
+    def __init__(self, view, controller, sock=None, map_=None):
         """Setup a server end point for every connected client."""
-        EndPoint.__init__(self, sock=sock, map=map)
+        EndPoint.__init__(self, sock, map_)
         # Create the view of the connected client.
         self.view = view
         self.view.end_point = self
@@ -53,16 +53,23 @@ class ServerEndPoint(EndPoint):
         EndPoint.handle_close(self)
 
 
-class ServerNetworkSpinner(NetworkSpinner, asyncore.dispatcher):
+class ServerNetworkWrapper(NetworkWrapper, asyncore.dispatcher):
+
+    """Wrap asyncore loop"""
 
     def __init__(self, event_manager, server_address):
-        NetworkSpinner.__init__(self, event_manager)
+        NetworkWrapper.__init__(self, event_manager)
         asyncore.dispatcher.__init__(self)
         # XXX Remember IPv6
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
         self.bind(server_address)
         self.listen(5)
+        self.keep_going = True
+
+    def handle_quit(self, ev_type):
+        self.keep_going = False
+        NetworkWrapper.handle_quit(self, ev_type)
 
     def handle_accept(self):
         client_info = self.accept()

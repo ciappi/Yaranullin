@@ -25,8 +25,8 @@ from yaranullin.game.game import Game
 from yaranullin.game.state import ServerState, ClientState
 from yaranullin.pygame_.gui import SimpleGUI
 from yaranullin.pygame_.base.spinner import PygameCPUSpinner
-from yaranullin.network.server import ServerNetworkSpinner
-from yaranullin.network.client import ClientNetworkSpinner
+from yaranullin.network.server import ServerNetworkWrapper
+from yaranullin.network.client import ClientNetworkWrapper
 from yaranullin.spinner import CPUSpinner
 from yaranullin.cmd_.command_prompt import CmdWrapper
 
@@ -50,8 +50,8 @@ class ServerRunner(object):
             port = CONFIG.getint('network', 'port')
         self.main_cpu_spinner = CPUSpinner(self.main_event_manager)
         self.cmd_wrapper = CmdWrapper(self.main_event_manager)
-        #self.main_cpu_spinner = ServerNetworkSpinner(self.main_event_manager,
-        #                                             ('', port))
+        self.network_wrapper = ServerNetworkWrapper(self.main_event_manager,
+                                                    ('', port))
         self.game = Game(self.main_event_manager)
         self.state = ServerState(self.game)
         if args.game:
@@ -74,7 +74,8 @@ class ClientRunner(object):
 
     def __init__(self, args):
         self.main_event_manager = EventManager()
-        self.main_cpu_spinner = ClientNetworkSpinner(self.main_event_manager)
+        self.main_cpu_spinner = CPUSpinner(self.main_event_manager)
+        self.network_wrapper = ClientNetworkWrapper(self.main_event_manager)
         self.mirror_state = ClientState(self.main_event_manager)
         self.cache = Cache(self.main_event_manager)
         self.pygame_gui = SimpleGUI(self.main_event_manager)
