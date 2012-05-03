@@ -17,24 +17,11 @@
 """Control classes for the game editor."""
 
 import cmd
-import collections
 import threading
-import time
 
 from yaranullin.config import __version__
 from yaranullin.event_system import Event, Listener
 from yaranullin.game.state import State
-
-
-class Deque(collections.deque):
-
-    def pop(self, idx=None):
-        if idx == 0:
-            return collections.deque.popleft(self)
-        if idx is None:
-            return collections.deque.pop(self)
-        raise TypeError("Got %s but expected value was '0' or 'None'" %
-                str(idx))
 
 
 class CmdWrapper(cmd.Cmd, Listener, State):
@@ -56,19 +43,15 @@ class CmdWrapper(cmd.Cmd, Listener, State):
         cmd.Cmd.__init__(self)
         State.__init__(self)
         Listener.__init__(self, event_manager)
-        self.cmdqueue = Deque()
         self.cmd_thread = None
 
     def handle_start(self, ev_type):
         self.cmd_thread = threading.Thread(target=self.cmdloop)
+        self.cmd_thread.daemon = True
         self.cmd_thread.start()
 
     def postloop(self):
         self.post(Event('quit'))
-
-    def handle_quit(self, ev_type):
-        self.cmdqueue.append('EOF')
-        self.cmd_thread.join()
 
     def do_EOF(self, line):
         """Shutdown the server"""
