@@ -38,8 +38,8 @@ class EndPoint(asyncore.dispatcher):
 
     def __init__(self, sock=None, sockets=None):
         asyncore.dispatcher.__init__(self, sock, sockets)
-        self.in_buffer = deque()
-        self.out_buffer = deque()
+        self._in_buffer = deque()
+        self._out_buffer = deque()
         self.in_chunks = deque()
         self.len_in_chunks = 0
         self.state = STATE_LEN
@@ -50,6 +50,13 @@ class EndPoint(asyncore.dispatcher):
         else:
             self.set_socket(sock)
 
+    def add_to_out_buffer(self, message):
+        self._out_buffer.append(FORMAT.pack(len(message)) + message)
+
+    def get_from_in_buffer(self):
+        if self._in_buffer:
+            return self._in_buffer.popleft()
+
     def handle_connect(self):
         pass
 
@@ -57,13 +64,13 @@ class EndPoint(asyncore.dispatcher):
         self.close()
 
     def writable(self):
-        return self.out_buffer
+        return self._out_buffer
 
     def handle_write(self):
-        num_sent = self.send(self.out_buffer[0])
-        self.out_buffer[0] = self.out_buffer[0][num_sent:]
-        if not self.out_buffer[0]:
-            self.out_buffer.popleft()
+        num_sent = self.send(self._out_buffer[0])
+        self._out_buffer[0] = self._out_buffer[0][num_sent:]
+        if not self._out_buffer[0]:
+            self._out_buffer.popleft()
 
     def recvall(self, length):
         """ Receives a whole message """
@@ -92,7 +99,8 @@ class EndPoint(asyncore.dispatcher):
         elif self.state == STATE_BODY:
             data = self.recvall(self.lendata)
             if data:
-                self.in_buffer.append(data)
+                self._in_buffer.append(data)
+                self.state = STATE_LEN
 
 
 class NetworkView(Listener):
@@ -109,7 +117,7 @@ class NetworkView(Listener):
             #data = dumps(event, default=encode)
             data = {'ev_type': ev_type}
             data.update(kargs)
-            self.end_point.out_buffer.append(bson.dumps(data))
+            self.end_point.add_to_out_buffer(bson.dumps(data))
 
 
 class NetworkController(Listener):
@@ -130,10 +138,12 @@ class NetworkController(Listener):
             # We trust we don't get stuck in this loop because the
             # network is much slower to fill the queue than we are able to
             # empty it.
-            while len(self.end_point.in_buffer):
-                data = self.end_point.in_buffer.popleft()
-                #event = loads(data, object_hook=decode)
-                event = Event(**bson.loads(data))
+            while True:
+                data = self.end_point.get_from_in_buffer()
+                if not data:
+                    break
+                data = bson.loads(data)
+                event = Event(**data)
                 if check_event(event):
                     self.post(event)
 
