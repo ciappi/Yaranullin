@@ -53,23 +53,16 @@ class ServerEndPoint(EndPoint):
         EndPoint.handle_close(self)
 
 
-class ServerNetworkWrapper(NetworkWrapper, asyncore.dispatcher):
-
-    """Wrap asyncore loop"""
+class Server(asyncore.dispatcher):
 
     def __init__(self, event_manager, server_address):
-        NetworkWrapper.__init__(self, event_manager)
         asyncore.dispatcher.__init__(self)
+        self.event_manager = event_manager
         # XXX Remember IPv6
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
         self.bind(server_address)
         self.listen(5)
-        self.keep_going = True
-
-    def handle_quit(self, ev_type):
-        self.keep_going = False
-        NetworkWrapper.handle_quit(self, ev_type)
 
     def handle_accept(self):
         client_info = self.accept()
@@ -79,11 +72,30 @@ class ServerNetworkWrapper(NetworkWrapper, asyncore.dispatcher):
         controller = ServerNetworkController(self.event_manager)
         ServerEndPoint(view, controller, sock=client_info[0])
 
+    def poll(self, timeout=1):
+        # We cannot let asyncore loop forever, otherwise the flag
+        # keep_going is useless.
+        asyncore.poll(timeout=timeout)
+
+
+class ServerNetworkWrapper(NetworkWrapper):
+
+    """Wrap asyncore loop"""
+
+    def __init__(self, event_manager, server_address):
+        NetworkWrapper.__init__(self, event_manager)
+        self.server = None
+        self.server_address = server_address
+        self.keep_going = True
+
+    def handle_quit(self, ev_type):
+        self.keep_going = False
+        NetworkWrapper.handle_quit(self, ev_type)
+
     def run_network(self):
 
         """Network loop."""
 
+        self.server = Server(self.event_manager, self.server_address)
         while self.keep_going:
-            # We cannot let asyncore loop forever, otherwise the flag
-            # keep_going is useless.
-            asyncore.poll(timeout=1)
+            self.server.poll()
