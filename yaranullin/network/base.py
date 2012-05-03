@@ -45,7 +45,10 @@ class EndPoint(asyncore.dispatcher):
         self.state = STATE_LEN
         self.lendata = 0
         # XXX remember IPv6...
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        if not sock:
+            self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        else:
+            self.set_socket(sock)
 
     def handle_connect(self):
         pass
