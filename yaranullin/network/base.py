@@ -87,7 +87,7 @@ class EndPoint(asyncore.dispatcher):
         if self.state == STATE_LEN:
             data = self.recvall(FORMAT.size)
             if data:
-                self.lendata = FORMAT.unpack(data)
+                (self.lendata, ) = FORMAT.unpack(data)
                 self.state = STATE_BODY
         elif self.state == STATE_BODY:
             data = self.recvall(self.lendata)
