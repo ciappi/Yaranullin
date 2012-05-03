@@ -22,11 +22,23 @@ import threading
 import time
 
 from yaranullin.config import __version__
-from yaranullin.event_system import Listener, Event
+from yaranullin.event_system import Event
+from yaranullin.spinner import CPUSpinner
 from yaranullin.game.state import State
 
 
-class CommandPrompt(cmd.Cmd, State, Listener):
+class Deque(collections.deque):
+
+    def pop(self, idx=None):
+        if idx == 0:
+            return collections.deque.popleft(self)
+        if idx is None:
+            return collections.deque.pop(self)
+        raise TypeError("Got %s but expected value was '0' or 'None'" %
+                str(idx))
+
+
+class CmdSpinner(cmd.Cmd, CPUSpinner, State):
 
     """Yaranullin's shell.
     
@@ -44,85 +56,19 @@ class CommandPrompt(cmd.Cmd, State, Listener):
     def __init__(self, event_manager):
         cmd.Cmd.__init__(self)
         State.__init__(self)
-        Listener.__init__(self, event_manager)
-        self.cmdqueue = collections.deque()
-        self.keep_going = True
-        self.parsing_commands = False
+        CPUSpinner.__init__(self, event_manager)
+        self.cmdqueue = Deque()
 
-    def cmdloop(self, intro=None):
-        """cmdloop"""
-
-        self.preloop()
-        if self.use_rawinput and self.completekey:
-            try:
-                import readline
-                self.old_completer = readline.get_completer()
-                readline.set_completer(self.complete)
-                readline.parse_and_bind(self.completekey+": complete")
-            except ImportError:
-                pass
-        try:
-            if intro is not None:
-                self.intro = intro
-            if self.intro:
-                self.stdout.write(str(self.intro)+"\n")
-            while True:
-                if self.parsing_commands:
-                    # Do not prompt the user for input because other threads
-                    # are processing commands and printing stuff on the
-                    # screen.
-                    time.sleep(0.001)
-                    continue
-                if not self.keep_going:
-                    # If we use 'while self.keep_going:', there could be a
-                    # condition where the user gets the prompt after issuing a
-                    # quit command.
-                    break
-                if self.use_rawinput:
-                    try:
-                        line = raw_input(self.prompt)
-                    except EOFError:
-                        line = 'EOF'
-                else:
-                    self.stdout.write(self.prompt)
-                    self.stdout.flush()
-                    line = self.stdin.readline()
-                    if not len(line):
-                        line = 'EOF'
-                    else:
-                        line = line.rstrip('\r\n')
-                if line:
-                    self.parsing_commands = True
-                    self.cmdqueue.append(line)
-            self.postloop()
-        finally:
-            if self.use_rawinput and self.completekey:
-                try:
-                    import readline
-                    readline.set_completer(self.old_completer)
-                except ImportError:
-                    pass
-
-    def handle_start(self, ev_type):
-        threading.Thread(target=self.cmdloop).start()
+    def postloop(self):
+        self.post(Event('quit'))
 
     def handle_quit(self, ev_type):
-        self.keep_going = False
-
-    def handle_tick(self, ev_type):
-        while self.cmdqueue:
-            line = self.cmdqueue.popleft()
-            line = self.precmd(line)
-            stop = self.onecmd(line)
-            stop = self.postcmd(stop, line)
-            if stop:
-                self.post(Event('quit'))
-                self.keep_going = False
-                break
-        self.parsing_commands = False
+        CPUSpinner.handle_quit(self, ev_type)
+        self.cmdqueue.append('EOF')
 
     def do_EOF(self, line):
         """Shutdown the server"""
+        print
         return True
 
     do_quit = do_q = do_exit = do_EOF
