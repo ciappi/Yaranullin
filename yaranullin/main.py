@@ -14,91 +14,37 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+''' Main module '''
 
+import traceback
 import sys
-import threading
 
-from yaranullin.config import CONFIG
-from yaranullin.event_system import EventManager, Event
-from yaranullin.cache import Cache
-from yaranullin.game.game import Game
-from yaranullin.game.state import ServerState, ClientState
-from yaranullin.pygame_.gui import SimpleGUI
-from yaranullin.pygame_.base.spinner import PygameCPUSpinner
-from yaranullin.network.server import ServerNetworkWrapper
-from yaranullin.network.client import ClientNetworkWrapper
-from yaranullin.spinner import MainCPUSpinner
-from yaranullin.cmd_.command_prompt import CmdWrapper
+from yaranullin.main_server import ServerRunner
 
 
-class ServerRunner(object):
-
-    """Yaranullin Server.
-
-    setup a game model
-    setup a server network spinner
-    setup a file controller
-    load a game if a file name is provided as a command line argument.
-
-    """
-
-    def __init__(self, args):
-        self.main_event_manager = EventManager()
-        self.main_cpu_spinner = MainCPUSpinner(self.main_event_manager)
-        self.cmd_wrapper = CmdWrapper(self.main_event_manager)
-        self.network_wrapper = ServerNetworkWrapper(self.main_event_manager)
-        self.game = Game(self.main_event_manager)
-        self.state = ServerState(self.game)
-        if args.game:
-            event = Event('game-load', dname=args.game)
-            self.main_event_manager.post(event)
-
-    def run(self):
-        self.main_cpu_spinner.run()
-
-
-class ClientRunner(object):
-
-    """Yaranullin Client.
-
-    setup a client network spinner
-    setup pygame controllers and views
-    post a join event
-
-    """
-
-    def __init__(self, args):
-        self.main_event_manager = EventManager()
-        self.main_cpu_spinner = MainCPUSpinner(self.main_event_manager)
-        self.network_wrapper = ClientNetworkWrapper(self.main_event_manager)
-        self.mirror_state = ClientState(self.main_event_manager)
-        self.cache = Cache(self.main_event_manager)
-        self.pygame_gui = SimpleGUI(self.main_event_manager)
-        self.pygame_spinner = PygameCPUSpinner(self.pygame_gui)
-        self.pygame_thread = threading.Thread(target=self.pygame_spinner.run)
-        if args.port:
-            port = args.port
-        else:
-            port = CONFIG.getint('network', 'port')
-        if args.host:
-            host = args.host
-        else:
-            host = CONFIG.get('network', 'host')
-        self.main_event_manager.post(Event('join', host=host, port=port))
-
-    def run(self):
-        self.pygame_thread.start()
-        self.main_cpu_spinner.run()
-        self.pygame_thread.join()
+def import_client_runner():
+    ''' Lazy import client runner '''
+    try:
+        from yaranullin.main_client import ClientRunner
+    except ImportError:
+        traceback.print_exc(file=sys.stderr)
+        sys.stderr.write('ERROR: Cannot import ClientRunner: %s\n' %
+                         'is pygame installed?')
+        return None
+    else:
+        return ClientRunner
 
 
 def main(args):
+    ''' Main function '''
 
     runner = None
     mode = args.mode
     if mode == 'server':
         runner = ServerRunner(args)
     elif mode == 'client':
-        runner = ClientRunner(args)
+        client_runner_class = import_client_runner()
+        if client_runner_class:
+            runner = client_runner_class(args)
     if runner:
         runner.run()
