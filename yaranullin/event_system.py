@@ -152,10 +152,6 @@ class EventManager(object):
             for listener in listeners:
                 listener.notify(event)
 
-    def __del__(self):
-        """Ensure a clean exit for all listeners."""
-        self.post(Event('quit'), Event('tick'))
-
 
 class Listener(object):
     """Listen to events coming from the Event Manager.
