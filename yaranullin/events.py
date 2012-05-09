@@ -2,48 +2,48 @@ import collections
 import inspect
 import time
 
-EVENTS = {}
+_EVENTS = {}
 
-QUEUE = collections.deque()
+_QUEUE = collections.deque()
 
-ANY, QUIT = range(1)
+ANY, QUIT = range(2)
 
-EVENTS[ANY] = set()
+_EVENTS[ANY] = set()
 
 
 def register(event, func):
     if not callable(func):
         # XXX could raise an exception
         return
-    if event not in EVENTS:
-        EVENTS[event] = set()
-    EVENTS[event].add(func)
+    if event not in _EVENTS:
+        _EVENTS[event] = set()
+    _EVENTS[event].add(func)
 
 
 def unregister(event, func=None):
-    if event not in EVENTS:
+    if event not in _EVENTS:
         # XXX may raise an exception
         return
     if func is None and event is not ANY:
-        del EVENTS[event]
+        del _EVENTS[event]
         return
-    if func in EVENTS[event]:
-        EVENTS[event].remove(func)
+    if func in _EVENTS[event]:
+        _EVENTS[event].remove(func)
 
 
 def post(event, **kargs):
-    if event not in EVENTS:
+    if event not in _EVENTS:
         return
-    QUEUE.append((event, kargs)) 
+    _QUEUE.append((event, kargs)) 
 
 
 def _consume_event_queue():
     stop = False
-    while QUEUE:
-        event, ekargs = QUEUE.popleft()
+    while _QUEUE:
+        event, ekargs = _QUEUE.popleft()
         if event == QUIT:
             stop = True 
-        handlers = EVENTS[event] | EVENTS[ANY]
+        handlers = _EVENTS[event] | _EVENTS[ANY]
         for handler in handlers:
             hargs, _, hkeywords, _ = inspect.getargspec(handler)
             kargs = dict(ekargs)
