@@ -48,6 +48,8 @@ def _consume_event_queue():
         for handler in handlers:
             hargs, _, hkeywords, _ = inspect.getargspec(handler)
             kargs = dict(ekargs)
+            # Add a special attribute with the type of the event
+            kargs['__event__'] = event
             if not hkeywords:
                 for key in kargs:
                     if key not in hargs:
