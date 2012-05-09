@@ -44,8 +44,6 @@ def _consume_event_queue():
     stop = False
     while _QUEUE:
         event, ekargs = _QUEUE.popleft()
-        if event == QUIT:
-            stop = True 
         handlers = _EVENTS[event] | _EVENTS[ANY]
         for handler in handlers:
             hargs, _, hkeywords, _ = inspect.getargspec(handler)
@@ -55,6 +53,9 @@ def _consume_event_queue():
                     if key not in hargs:
                         del kargs[key]
             handler(**kargs)
+        if event == QUIT:
+            stop = True 
+            break
     return stop
 
 
