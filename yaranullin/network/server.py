@@ -18,46 +18,35 @@
 import socket
 import asyncore
 
-from yaranullin.network.base import EndPoint, NetworkView, NetworkController, \
-                                    NetworkSpinner
+from yaranullin.network.base import EndPoint, EndPointWrapper, NetworkSpinner, \
+                                    NetworkWrapper
 
 
-class ServerNetworkController(NetworkController):
-    pass
+class ServerEndPointWrapper(EndPointWrapper):
 
+    """End point wrapper for the server"""
 
-class ServerNetworkView(NetworkView):
-
-    handle_game_event_update = NetworkView.add_to_out_queue
-    handle_game_event_pawn_next = NetworkView.add_to_out_queue
-    handle_game_event_pawn_updated = NetworkView.add_to_out_queue
-    handle_game_event_board_change = NetworkView.add_to_out_queue
-    handle_resource_update = NetworkView.add_to_out_queue
+    handle_game_event_update = EndPointWrapper._add_to_out_queue
+    handle_game_event_pawn_next = EndPointWrapper._add_to_out_queue
+    handle_game_event_pawn_updated = EndPointWrapper._add_to_out_queue
+    handle_game_event_board_change = EndPointWrapper._add_to_out_queue
+    handle_resource_update = EndPointWrapper._add_to_out_queue
 
 
 class ServerEndPoint(EndPoint):
 
-    def __init__(self, view, controller, sock=None, map=None):
-        """Setup a server end point for every connected client."""
-        EndPoint.__init__(self, sock=sock, map=map)
-        # Create the view of the connected client.
-        self.view = view
-        self.view.end_point = self
-        # Create the controller of the connected client.
-        self.controller = controller
-        self.controller.end_point = self
+    """End point for the server"""
 
-    def handle_close(self):
-        self.view.end_point = self.controller.end_point = None
-        self.view = self.controller = None
-        EndPoint.handle_close(self)
+    wrapper_class = ServerEndPointWrapper
 
 
-class ServerNetworkSpinner(NetworkSpinner, asyncore.dispatcher):
+class Server(asyncore.dispatcher):
+
+    """Handle server and create end points"""
 
     def __init__(self, event_manager, server_address):
-        NetworkSpinner.__init__(self, event_manager)
         asyncore.dispatcher.__init__(self)
+        self.event_manager = event_manager
         # XXX Remember IPv6
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
@@ -68,15 +57,22 @@ class ServerNetworkSpinner(NetworkSpinner, asyncore.dispatcher):
         client_info = self.accept()
         if client_info is None:
             return
-        view = ServerNetworkView(self.event_manager)
-        controller = ServerNetworkController(self.event_manager)
-        ServerEndPoint(view, controller, sock=client_info[0])
+        ServerEndPoint(self.event_manager, sock=client_info[0])
 
-    def run_network(self):
 
-        """Network loop."""
+class ServerNetworkSpinner(NetworkSpinner):
 
-        while self.keep_going:
-            # We cannot let asyncore loop forever, otherwise the flag
-            # keep_going is useless.
-            asyncore.poll(timeout=1)
+    """Spinner for the server"""
+
+    def _run(self):
+        # FIXME take address from config file
+        Server(self.event_manager, ('', 60000))
+        NetworkSpinner._run(self)
+
+
+class ServerNetworkWrapper(NetworkWrapper):
+
+    """Wrap asyncore loop"""
+
+    spinner = ServerNetworkSpinner
+

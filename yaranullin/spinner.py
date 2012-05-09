@@ -53,18 +53,30 @@ class CPUSpinner(Listener):
 
         """
         try:
-            self.post(Event('start'))
-            while self.keep_going:
-                self.post(Event('tick'))
-                time.sleep(0.01)
+            self._run()
         except KeyboardInterrupt:
             pass
         except:
             traceback.print_exc(file=sys.stdout)
         finally:
-            # Try to exit cleanly.
-            self.post(Event('quit'), Event('tick'))
+            self._post_run()
+
+    def _run(self):
+        self.post(Event('start'))
+        while self.keep_going:
+            self.post(Event('tick'))
+            time.sleep(0.01)
+
+    def _post_run(self):
+        pass
 
     def handle_quit(self, ev_type):
         """This will stop the while loop from running."""
         self.keep_going = False
+
+
+class MainCPUSpinner(CPUSpinner):
+
+    def _post_run(self):
+        # Try to exit cleanly.
+        self.post(Event('quit'), Event('tick'))

@@ -17,122 +17,53 @@
 """ Network client """
 
 
-import time
-import asyncore
-
 from yaranullin.event_system import Event
-from yaranullin.network.base import EndPoint, NetworkView, NetworkController, \
-                                    NetworkSpinner
+from yaranullin.network.base import EndPoint, EndPointWrapper, NetworkSpinner, \
+                                    NetworkWrapper
 
 
-STATE_DISCONNECTED, STATE_CONNECTING, STATE_CONNECTED = range(3)
+class ClientEndPointWrapper(EndPointWrapper):
 
-
-class State(object):
-
-    def __init__(self, state):
-        self._state = state
-
-    def get_state(self):
-        """Return the current state"""
-        return self._state
-
-    def set_state(self, state):
-        """Set the internal state to a new value"""
-        self._state = state
-
-
-STATE = State(STATE_DISCONNECTED)
-
-
-class ClientNetworkController(NetworkController):
-    """ Client-side network controller """
-
-
-class ClientNetworkView(NetworkView):
-
-    """Basic NetworkView for a client.
+    """End point wrapper for a client.
 
     The client can only move pawns and request the next pawn according to
     initiative order.
 
     """
 
-    handle_game_request_pawn_move = NetworkView.add_to_out_queue
-    handle_game_request_pawn_place = NetworkView.add_to_out_queue
-    handle_game_request_pawn_next = NetworkView.add_to_out_queue
-    handle_game_request_update = NetworkView.add_to_out_queue
-    handle_resource_request = NetworkView.add_to_out_queue
+    handle_game_request_pawn_move = EndPointWrapper._add_to_out_queue
+    handle_game_request_pawn_place = EndPointWrapper._add_to_out_queue
+    handle_game_request_pawn_next = EndPointWrapper._add_to_out_queue
+    handle_game_request_update = EndPointWrapper._add_to_out_queue
+    handle_resource_request = EndPointWrapper._add_to_out_queue
 
 
 class ClientEndPoint(EndPoint):
 
     """Client EndPoint."""
 
-    def __init__(self, host, port, view, controller):
-        """Setup the client end point."""
-        EndPoint.__init__(self)
-        # Connect to the server.
-        self.connect((host, port))
-        self.view = view
-        self.controller = controller
-        self.view.end_point = self
-        self.controller.end_point = self
-
-    def handle_close(self):
-        # Delete every reference to view and controller so that they will be
-        # garbage collected.
-        EndPoint.handle_close(self)
-        self.view.end_point = self.controller.end_point = None
-        self.view = self.controller = None
-        STATE.set_state(STATE_DISCONNECTED)
-
+    wrapper_class = ClientEndPointWrapper
 
 class ClientNetworkSpinner(NetworkSpinner):
-    """ Keeps client-side network running """
 
-    def __init__(self, event_manager):
-        NetworkSpinner.__init__(self, event_manager)
-        self.end_point = None
-        self.host = None
-        self.port = None
-        self.view = None
-        self.controller = None
+    """Spinner for the client"""
+
+    end_point = None
+
+    def _run(self):
+        self.end_point = ClientEndPoint(self.event_manager)
+        NetworkSpinner._run(self)
 
     def handle_join(self, ev_type, host, port):
         """Try to join a remote server."""
         # We should reconnect if the connection goes down but
         # prevent a reconnection is connection is ok.
-        state = STATE.get_state()
-        if not self.end_point and state == STATE_DISCONNECTED:
-            self.host = host
-            self.port = port
-            # Create the view for the network.
-            self.view = ClientNetworkView(self.event_manager)
-            # Create the controller for the network.
-            self.controller = ClientNetworkController(self.event_manager)
-            STATE.set_state(STATE_CONNECTING)
-            event = Event('game-request-update')
-            self.post(event)
+        self.end_point.connect((host, port))
+        self.post(Event('game-request-update'))
 
-    def run_network(self):
-        """Network loop."""
-        while self.keep_going:
-            state = STATE.get_state()
-            if state == STATE_CONNECTING:
-                self.end_point = ClientEndPoint(self.host, self.port,
-                        self.view, self.controller)
-                self.controller = self.view = None
-                STATE.set_state(STATE_CONNECTED)
-            elif state == STATE_CONNECTED:
-                # We cannot let asyncore loop forever, otherwise the flag
-                # keep_going is useless.
-                asyncore.poll(timeout=1)
-            elif state == STATE_DISCONNECTED:
-                # Ensure that an unused socket can be garbage collected
-                self.end_point = None
-                # Sleep a little to prevent a furious while loop 
-                time.sleep(0.01)
-            else:
-                # XXX should raise an exception
-                pass
+
+class ClientNetworkWrapper(NetworkWrapper):
+
+    """ Keeps client-side network running """
+
+    spinner = ClientNetworkSpinner
