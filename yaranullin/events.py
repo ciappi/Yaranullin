@@ -41,7 +41,7 @@ def unregister(event, func=None):
 
 
 def post(event, **kargs):
-    if event not in _EVENTS:
+    if event not in _EVENTS and not _EVENTS[ANY]:
         return
     _QUEUE.append((event, kargs)) 
 
