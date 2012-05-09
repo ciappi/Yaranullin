@@ -53,12 +53,13 @@ def _consume_event_queue():
         handlers = {}
         handlers.update(_EVENTS[event])
         handlers.update(_EVENTS[ANY])
-        for handler, instance in handlers.iteritems():
+        for handler, self in handlers.iteritems():
             hargs, _, hkeywords, _ = inspect.getargspec(handler)
             kargs = dict(ekargs)
             # Add a special attribute with the type of the event
             kargs['__event__'] = event
-            kargs['self'] = instance
+            if 'self' in hargs:
+                kargs['self'] = self
             if not hkeywords:
                 for key in kargs:
                     if key not in hargs:
