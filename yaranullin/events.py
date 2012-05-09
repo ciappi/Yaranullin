@@ -7,7 +7,7 @@ _EVENTS = {}
 
 _QUEUE = collections.deque()
 
-ANY, QUIT = range(2)
+ANY, QUIT, TICK = range(3)
 
 _EVENTS[ANY] = weakref.WeakSet()
 
@@ -66,4 +66,5 @@ def run():
     stop = False
     while not stop:
         time.sleep(0.01)
+        post(TICK)
         stop = _consume_event_queue()
