@@ -1,6 +1,7 @@
 import collections
 import inspect
 import time
+import weakref
 
 _EVENTS = {}
 
@@ -8,7 +9,7 @@ _QUEUE = collections.deque()
 
 ANY, QUIT = range(2)
 
-_EVENTS[ANY] = set()
+_EVENTS[ANY] = weakref.WeakSet()
 
 
 def register(event, func):
@@ -16,7 +17,7 @@ def register(event, func):
         # XXX could raise an exception
         return
     if event not in _EVENTS:
-        _EVENTS[event] = set()
+        _EVENTS[event] = weakref.WeakSet()
     _EVENTS[event].add(func)
 
 
