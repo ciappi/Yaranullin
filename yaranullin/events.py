@@ -30,6 +30,8 @@ def unregister(event, func=None):
         return
     if func in _EVENTS[event]:
         _EVENTS[event].remove(func)
+    if not len(_EVENTS[event]) and event is not ANY:
+        del _EVENTS[event]
 
 
 def post(event, **kargs):
