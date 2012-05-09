@@ -68,3 +68,31 @@ def run():
         time.sleep(0.01)
         post(TICK)
         stop = _consume_event_queue()
+
+
+class Pipe(object):
+
+    ''' Used for communication between two processes.
+    
+    To allow sending and receiving events from two different processes,
+    create an instance of Pipe for each one of them. The in_queue of the
+    first Pipe must be the out_queue of the second and viceversa.
+
+    The default implementation allows all events through the queues.
+    
+    '''
+
+    def __init__(self, in_queue, out_queue):
+        self.in_queue = in_queue
+        self.out_queue = out_queue
+        register(ANY, self.handle)
+
+    def handle(self, **kargs):
+        if kargs['__event__'] == TICK:
+            return
+        self.out_queue.put(kargs)
+
+    def tick(self):
+        while not self.in_queue.empty():
+            event = self.in_queue.get()
+            post(**event)
