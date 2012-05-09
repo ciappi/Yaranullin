@@ -96,6 +96,7 @@ class Pipe(object):
         self.in_queue = in_queue
         self.out_queue = out_queue
         register(ANY, self.handle)
+        register(TICK, self.tick)
 
     def handle(self, **kargs):
         if kargs['__event__'] == TICK:
