@@ -53,6 +53,7 @@ def unregister(event=None, func=None):
     if event is None and func is None:
         _EVENTS.clear()
         _EVENTS[ANY] = weakref.WeakValueDictionary()
+        return
     if event not in _EVENTS:
         # XXX may raise an exception
         return
