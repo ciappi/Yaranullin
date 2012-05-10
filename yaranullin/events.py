@@ -74,6 +74,8 @@ def unregister(event=None, func=None):
 
 def post(event, **kargs):
     ''' Post an event '''
+    if not isinstance(event, int):
+        return
     if event not in _EVENTS and not _EVENTS[ANY]:
         return
     # Add the id of the dict to the object
