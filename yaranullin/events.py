@@ -58,9 +58,12 @@ def unregister(event, func=None):
         del _EVENTS[event]
         return
     if inspect.ismethod(func):
-        del _EVENTS[event][func.im_func]
-    else:
+        func = func.im_func
+    try:
         del _EVENTS[event][func]
+    except KeyError:
+        # XXX raise an exception
+        return
     if not _EVENTS[event] and event is not ANY:
         del _EVENTS[event]
 
