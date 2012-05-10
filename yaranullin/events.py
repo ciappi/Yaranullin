@@ -48,8 +48,11 @@ def register(event, func):
     _EVENTS[event].update(func)
 
 
-def unregister(event, func=None):
+def unregister(event=None, func=None):
     ''' Unregister an handler '''
+    if event is None and func is None:
+        _EVENTS.clear()
+        _EVENTS[ANY] = weakref.WeakValueDictionary()
     if event not in _EVENTS:
         # XXX may raise an exception
         return
@@ -72,15 +75,22 @@ def post(event, **kargs):
     ''' Post an event '''
     if event not in _EVENTS and not _EVENTS[ANY]:
         return
+    # Add the id of the dict to the object
+    id_ = id(kargs)
+    kargs['__id__'] = id_
+    # Add a special attribute with the type of the event
+    kargs['__event__'] = event
     # Post an event only if there is some handler registered.
-    _QUEUE.append((event, kargs)) 
+    _QUEUE.append(kargs) 
+    return id_
 
 
 def _consume_event_queue():
     ''' Consume the event queue and call all handlers '''
     stop = False
     while _QUEUE:
-        event, ekargs = _QUEUE.popleft()
+        ekargs = _QUEUE.popleft()
+        event = ekargs['__event__']
         # Find all handler for this event
         handlers = {}
         handlers.update(_EVENTS[event])
@@ -88,15 +98,13 @@ def _consume_event_queue():
         for handler, self in handlers.iteritems():
             hargs, _, hkeywords, _ = inspect.getargspec(handler)
             kargs = dict(ekargs)
-            # Add a special attribute with the type of the event
-            kargs['__event__'] = event
             if 'self' in hargs:
                 # We assume that this is a bound method
                 kargs['self'] = self
             # Check if the handler has ** magic
             if not hkeywords:
                 # Delete all arguments that the handler cannot take
-                for key in kargs:
+                for key in kargs.keys():
                     if key not in hargs:
                         del kargs[key]
             handler(**kargs)
@@ -130,14 +138,26 @@ class Pipe(object):
     def __init__(self, in_queue, out_queue):
         self.in_queue = in_queue
         self.out_queue = out_queue
+        self.posted_events = set()
         register(ANY, self.handle)
         register(TICK, self.tick)
 
     def handle(self, **kargs):
         ''' Put given event to the out queue '''
-        if '__event__' not in kargs:
+        try:
+            id_ = kargs['__id__']
+            event = kargs['__event__']
+        except KeyError:
             return
-        if kargs['__event__'] == TICK:
+        if event == TICK:
+            # Never post ticks between processes.
+            return
+        if id_ in self.posted_events:
+            # This event was posted by the pipe, so do not have to post it
+            # back or we will trigger an infinite loop.
+            # Remove the event from the set (the event will be posted here
+            # once) and return
+            self.posted_events.remove(id_)
             return
         self.out_queue.put(kargs)
 
@@ -145,4 +165,4 @@ class Pipe(object):
         ''' Get all the event from the in queue '''
         while not self.in_queue.empty():
             event = self.in_queue.get()
-            post(**event)
+            self.posted_events.add(post(**event))
