@@ -135,6 +135,8 @@ class Pipe(object):
 
     def handle(self, **kargs):
         ''' Put given event to the out queue '''
+        if '__event__' not in kargs:
+            return
         if kargs['__event__'] == TICK:
             return
         self.out_queue.put(kargs)
