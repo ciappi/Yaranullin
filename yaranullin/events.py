@@ -50,26 +50,24 @@ def register(event, func):
 
 def unregister(event=None, func=None):
     ''' Unregister an handler '''
-    if event is None and func is None:
+    if func is not None:
+        if inspect.ismethod(func):
+            func = func.im_func
+        if event in _EVENTS:
+            del _EVENTS[event][func]
+        elif event is None:
+            for ev, handlers in _EVENTS.items():
+                if func in handlers:
+                    del _EVENTS[ev][func]
+        for ev in _EVENTS.keys():
+            if not _EVENTS[ev]:
+                del _EVENTS[ev]
+    elif event is None:
         _EVENTS.clear()
+    elif event in _EVENTS:
+        del _EVENTS[event]
+    if ANY not in _EVENTS:
         _EVENTS[ANY] = weakref.WeakValueDictionary()
-        return
-    if event not in _EVENTS:
-        # XXX may raise an exception
-        return
-    if func is None and event is not ANY:
-        # Delete all the events
-        del _EVENTS[event]
-        return
-    if inspect.ismethod(func):
-        func = func.im_func
-    try:
-        del _EVENTS[event][func]
-    except KeyError:
-        # XXX raise an exception
-        return
-    if not _EVENTS[event] and event is not ANY:
-        del _EVENTS[event]
 
 
 def post(event, **kargs):
