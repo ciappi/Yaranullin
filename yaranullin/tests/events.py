@@ -21,7 +21,7 @@ if __name__ == '__main__':
     sys.path.insert(0, ".")
 
 from yaranullin.events import register, unregister, post, _EVENTS, _QUEUE, \
-                              _consume_event_queue
+                              process_queue
 
 Q = []
 
@@ -86,13 +86,13 @@ class TestEvents(unittest.TestCase):
         # Check if the event if well formatted
         self.assertEqual({'__id__':id_, '__event__':10}, _QUEUE.popleft())
 
-    def test_consume_event_queue(self):
+    def test_process_queue(self):
         global Q
         register(10, func_handler)
         for _ in range(3):
             post(10)
         _QUEUE_ids = [el['__id__'] for el in _QUEUE]
-        _consume_event_queue()
+        process_queue()
         self.assertEqual(_QUEUE_ids, Q)
         # Try magic handler function
         Q = []
@@ -102,7 +102,7 @@ class TestEvents(unittest.TestCase):
         for _ in range(3):
             post(10, first='first arg', second='second arg')
         _QUEUE_events = list(_QUEUE)
-        _consume_event_queue()
+        process_queue()
         self.assertEqual(_QUEUE_events, Q)
 
 

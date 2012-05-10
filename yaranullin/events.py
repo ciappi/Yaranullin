@@ -88,7 +88,7 @@ def post(event, **kargs):
     return id_
 
 
-def _consume_event_queue():
+def process_queue():
     ''' Consume the event queue and call all handlers '''
     stop = False
     while _QUEUE:
@@ -123,7 +123,7 @@ def run():
     while not stop:
         time.sleep(0.01)
         post(TICK)
-        stop = _consume_event_queue()
+        stop = process_queue()
 
 
 class Pipe(object):
