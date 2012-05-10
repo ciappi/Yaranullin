@@ -45,6 +45,7 @@ class Handler(object):
 class TestEvents(unittest.TestCase):
 
     def test_register(self):
+        unregister()
         # Test if a function handler is registered correctly
         register(10, func_handler)
         self.assertEqual(_EVENTS[10][func_handler], func_handler)
