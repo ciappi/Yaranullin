@@ -35,8 +35,8 @@ _EVENTS = {}
 _EVENTS[ANY] = weakref.WeakValueDictionary()
 
 
-def register(event, func):
-    ''' Register an handler '''    
+def connect(event, func):
+    ''' Connect an handler '''    
     if inspect.isfunction(func):
         func = {func: func}
     elif inspect.ismethod(func):
@@ -48,8 +48,8 @@ def register(event, func):
     _EVENTS[event].update(func)
 
 
-def unregister(event=None, func=None):
-    ''' Unregister an handler '''
+def disconnect(event=None, func=None):
+    ''' Disconnect an handler '''
     if func is not None:
         if inspect.ismethod(func):
             func = func.im_func
@@ -81,7 +81,7 @@ def post(event, **kargs):
     kargs['__id__'] = id_
     # Add a special attribute with the type of the event
     kargs['__event__'] = event
-    # Post an event only if there is some handler registered.
+    # Post an event only if there is some handler connected.
     _QUEUE.append(kargs) 
     return id_
 
@@ -140,8 +140,8 @@ class Pipe(object):
         self.in_queue = in_queue
         self.out_queue = out_queue
         self.posted_events = set()
-        register(ANY, self.handle)
-        register(TICK, self.tick)
+        connect(ANY, self.handle)
+        connect(TICK, self.tick)
 
     def handle(self, **kargs):
         ''' Put given event to the out queue '''
