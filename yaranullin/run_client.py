@@ -14,5 +14,16 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import asyncore
+
+from yaranullin.events import TICK
+from yaranullin.framework import post, process_queue
+
+
 def run(args):
-    print args
+    ''' Main loop for the client '''
+    stop = False
+    while not stop:
+        post(TICK)
+        stop = process_queue()
+        asyncore.poll(0.01)
