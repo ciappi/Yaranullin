@@ -1,4 +1,4 @@
-# yaranullin/events.py
+# yaranullin/framework.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -25,8 +25,8 @@ import inspect
 import time
 import weakref
 
+from yaranullin.events import *
 
-ANY, QUIT, TICK = range(3)
 
 _QUEUE = collections.deque()
 
@@ -70,17 +70,17 @@ def disconnect(event=None, func=None):
         _EVENTS[ANY] = weakref.WeakValueDictionary()
 
 
-def post(event, **kargs):
+def post(__event__, **kargs):
     ''' Post an event '''
-    if not isinstance(event, int):
+    if not isinstance(__event__, int):
         return
-    if event not in _EVENTS and not _EVENTS[ANY]:
+    if __event__ not in _EVENTS and not _EVENTS[ANY]:
         return
     # Add the id of the dict to the object
     id_ = id(kargs)
     kargs['__id__'] = id_
     # Add a special attribute with the type of the event
-    kargs['__event__'] = event
+    kargs['__event__'] = __event__
     # Post an event only if there is some handler connected.
     _QUEUE.append(kargs) 
     return id_
@@ -113,15 +113,6 @@ def process_queue():
             stop = True 
             break
     return stop
-
-
-def run():
-    ''' Sample main loop of yaranullin '''
-    stop = False
-    while not stop:
-        time.sleep(0.01)
-        post(TICK)
-        stop = process_queue()
 
 
 class Pipe(object):
