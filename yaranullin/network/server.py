@@ -16,37 +16,34 @@
 
 
 import socket
-import asyncore
 
-from yaranullin.network.base import EndPoint, EndPointWrapper, NetworkSpinner, \
-                                    NetworkWrapper
+from yaranullin.events import *
+from yaranullin.framework import post, connect
+from yaranullin.network.base import EventEndPoint
 
 
-class ServerEndPointWrapper(EndPointWrapper):
+class ServerEventEndPoint(EventEndPoint):
 
     """End point wrapper for the server"""
 
-    handle_game_event_update = EndPointWrapper._add_to_out_queue
-    handle_game_event_pawn_next = EndPointWrapper._add_to_out_queue
-    handle_game_event_pawn_updated = EndPointWrapper._add_to_out_queue
-    handle_game_event_board_change = EndPointWrapper._add_to_out_queue
-    handle_resource_update = EndPointWrapper._add_to_out_queue
+    def __init__(self, sock):
+        EventEndPoint.__init__(self, sock)
+        self._connect_handlers()
+
+    def _connect_handlers(self):
+        connect(GAME-EVENT-UPDATE, self.post)
+        connect(GAME-EVENT-PAWN-NEXT, self.post)
+        connect(GAME-EVENT-PAWN-UPDATED, self.post)
+        connect(GAME-EVENT-BOARD-CHANGE, self.post)
+        #connect(RESOURCE-UPDATE, self.post)
 
 
-class ServerEndPoint(EndPoint):
-
-    """End point for the server"""
-
-    wrapper_class = ServerEndPointWrapper
-
-
-class Server(asyncore.dispatcher):
+class EventServer(asyncore.dispatcher):
 
     """Handle server and create end points"""
 
-    def __init__(self, event_manager, server_address):
+    def __init__(self, server_address):
         asyncore.dispatcher.__init__(self)
-        self.event_manager = event_manager
         # XXX Remember IPv6
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
@@ -57,22 +54,4 @@ class Server(asyncore.dispatcher):
         client_info = self.accept()
         if client_info is None:
             return
-        ServerEndPoint(self.event_manager, sock=client_info[0])
-
-
-class ServerNetworkSpinner(NetworkSpinner):
-
-    """Spinner for the server"""
-
-    def _run(self):
-        # FIXME take address from config file
-        Server(self.event_manager, ('', 60000))
-        NetworkSpinner._run(self)
-
-
-class ServerNetworkWrapper(NetworkWrapper):
-
-    """Wrap asyncore loop"""
-
-    spinner = ServerNetworkSpinner
-
+        ServerEventEndPoint(sock=client_info[0])

@@ -16,13 +16,13 @@
 
 """ Network client """
 
+from yaranullin.events import *
 
-from yaranullin.event_system import Event
-from yaranullin.network.base import EndPoint, EndPointWrapper, NetworkSpinner, \
-                                    NetworkWrapper
+from yaranullin.framework import connect, post
+from yaranullin.network.base import EventEndPoint
 
 
-class ClientEndPointWrapper(EndPointWrapper):
+class ClientEventEndPoint(EventEndPoint):
 
     """End point wrapper for a client.
 
@@ -31,39 +31,22 @@ class ClientEndPointWrapper(EndPointWrapper):
 
     """
 
-    handle_game_request_pawn_move = EndPointWrapper._add_to_out_queue
-    handle_game_request_pawn_place = EndPointWrapper._add_to_out_queue
-    handle_game_request_pawn_next = EndPointWrapper._add_to_out_queue
-    handle_game_request_update = EndPointWrapper._add_to_out_queue
-    handle_resource_request = EndPointWrapper._add_to_out_queue
+    def __init__(self):
+        EventEndPoint.__init__(self)
+        self._connect_handlers()
 
+    def _connect_handlers(self):
+        ''' Connect the events to send to the sever '''
+        connect(JOIN, self.join)
+        connect(GAME-REQUEST-PAWN-MOVE, self.post)
+        connect(GAME-REQUEST-PAWN-PLACE, self.post)
+        connect(GAME-REQUEST-PAWN-NEXT, self.post)
+        connect(GAME-REQUEST-UPDATE, self.post)
+        #connect(RESOURCE-REQUEST, self.post)
 
-class ClientEndPoint(EndPoint):
-
-    """Client EndPoint."""
-
-    wrapper_class = ClientEndPointWrapper
-
-class ClientNetworkSpinner(NetworkSpinner):
-
-    """Spinner for the client"""
-
-    end_point = None
-
-    def _run(self):
-        self.end_point = ClientEndPoint(self.event_manager)
-        NetworkSpinner._run(self)
-
-    def handle_join(self, ev_type, host, port):
+    def join(self, host, port):
         """Try to join a remote server."""
         # We should reconnect if the connection goes down but
         # prevent a reconnection is connection is ok.
-        self.end_point.connect((host, port))
-        self.post(Event('game-request-update'))
-
-
-class ClientNetworkWrapper(NetworkWrapper):
-
-    """ Keeps client-side network running """
-
-    spinner = ClientNetworkSpinner
+        self.connect((host, port))
+        post(GAME-REQUEST-UPDATE)
