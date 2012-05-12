@@ -21,7 +21,9 @@ import struct
 import socket
 import json
 import collections
+import bz2
 
+from yaranullin.events import TICK
 from yaranullin.framework import post, connect
 
 
@@ -102,33 +104,18 @@ class _EndPoint(asyncore.dispatcher):
                 self.state = STATE_LEN
 
 
-class EventEndPoint(_EndPoint):
+STATE_MESSAGE, STATE_RESOURCE = range(2)
+
+
+class EndPoint(_EndPoint):
 
     """Interface _EndPoint with Yaranullin's event system"""
 
     def __init__(self):
+        _EndPoint.__init__(self)
         connect(TICK, self.process_queue)
-
-    def post(self, **kargs):
-        """Add an event to the queue of the end_point."""
-        if not self.check_out_event(**kargs):
-            return
-        data = dict(kargs)
-        self._add_to_out_buffer(json.dumps(data))
-
-    def process_queue(self):
-        """Process the event queue."""
-        # We trust we don't get stuck in this loop because the
-        # network is much slower to fill the queue than we are able to
-        # empty it.
-        while True:
-            data = _EndPoint.get_from_in_buffer(self)
-            if not data:
-                break
-            data = json.loads(data)
-            if not self.check_in_event(**data):
-                continue
-            post(**data)
+        self.state = STATE_MESSAGE
+        self.resource_message = None
 
     def check_in_event(self, **kargs):
         """Check if an event can be posted on the local event manager."""
@@ -138,3 +125,40 @@ class EventEndPoint(_EndPoint):
         """Check if an event can be sent over the network."""
         return True
 
+    def process_queue(self):
+        """Process the event queue."""
+        # We trust we don't get stuck in this loop because the
+        # network is much slower to fill the queue than we are able to
+        # empty it.
+        while True:
+            data = _EndPoint._get_from_in_buffer(self)
+            if not data:
+                break
+            if self.state == STATE_MESSAGE:
+                data = json.loads(data)
+                if not self.check_in_event(**data):
+                    continue
+                if 'resource' in data:
+                    self.state = STATE_RESOURCE
+                    self.resource_message = data
+                else:
+                    post(**data)
+            elif self.state == STATE_RESOURCE:
+                self.resource_message['resource'] = bz2.decompress(data)
+                data = dict(self.resource_message)
+                self.resource_message = None
+                self.state = STATE_MESSAGE
+                post(**data)
+
+    def post(self, **kargs):
+        """Add an event to the queue of the end_point."""
+        if not self.check_out_event(**kargs):
+            return
+        data = dict(kargs)
+        if 'resource' in data:
+            resource = data.pop('resource')
+            data['resource'] = None
+            self._add_to_out_buffer(json.dumps(data))
+            self._add_to_out_buffer(bz2.compress(resource))
+        else:
+            self._add_to_out_buffer(json.dumps(data))
