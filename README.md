@@ -13,7 +13,6 @@ This is a list of all dependencies.
 
 * python >= 2.7
 * python-pygame >= 1.9.1
-* python-bson (included in the sources)
 
 ## Server
 
