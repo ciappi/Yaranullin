@@ -22,16 +22,13 @@ This module is an simple implementation of an event patter.
 
 import collections
 import inspect
-import time
 import weakref
 
-from yaranullin.events import *
+from yaranullin.events import TICK, ANY, QUIT
 
 
 _QUEUE = collections.deque()
-
 _EVENTS = {}
-
 _EVENTS[ANY] = weakref.WeakValueDictionary()
 
 
@@ -56,12 +53,12 @@ def disconnect(event=None, func=None):
         if event in _EVENTS:
             del _EVENTS[event][func]
         elif event is None:
-            for ev, handlers in _EVENTS.items():
+            for evnt, handlers in _EVENTS.items():
                 if func in handlers:
-                    del _EVENTS[ev][func]
-        for ev in _EVENTS.keys():
-            if not _EVENTS[ev]:
-                del _EVENTS[ev]
+                    del _EVENTS[evnt][func]
+        for evnt in _EVENTS.keys():
+            if not _EVENTS[evnt]:
+                del _EVENTS[evnt]
     elif event is None:
         _EVENTS.clear()
     elif event in _EVENTS:
