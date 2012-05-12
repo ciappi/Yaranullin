@@ -20,6 +20,8 @@
 ANY = 0
 QUIT = 1
 TICK = 2
+CACHE_GET = 3
+CACHE_SEND = 4
 
 # Network
 JOIN = 10
