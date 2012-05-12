@@ -16,26 +16,28 @@
 
 
 import socket
+import asyncore
 
-from yaranullin.events import *
-from yaranullin.framework import post, connect
-from yaranullin.network.base import EventEndPoint
+from yaranullin.events import GAME_EVENT_UPDATE, GAME_EVENT_PAWN_NEXT, \
+        GAME_EVENT_PAWN_UPDATED, GAME_EVENT_BOARD_CHANGE, RESOURCE_UPDATE
+from yaranullin.framework import connect
+from yaranullin.network.base import EndPoint
 
 
-class ServerEventEndPoint(EventEndPoint):
+class ServerEndPoint(EndPoint):
 
     """End point wrapper for the server"""
 
     def __init__(self, sock):
-        EventEndPoint.__init__(self, sock)
+        EndPoint.__init__(self, sock)
         self._connect_handlers()
 
     def _connect_handlers(self):
-        connect(GAME-EVENT-UPDATE, self.post)
-        connect(GAME-EVENT-PAWN-NEXT, self.post)
-        connect(GAME-EVENT-PAWN-UPDATED, self.post)
-        connect(GAME-EVENT-BOARD-CHANGE, self.post)
-        #connect(RESOURCE-UPDATE, self.post)
+        connect(GAME_EVENT_UPDATE, self.post)
+        connect(GAME_EVENT_PAWN_NEXT, self.post)
+        connect(GAME_EVENT_PAWN_UPDATED, self.post)
+        connect(GAME_EVENT_BOARD_CHANGE, self.post)
+        connect(RESOURCE_UPDATE, self.post)
 
 
 class EventServer(asyncore.dispatcher):
@@ -54,4 +56,4 @@ class EventServer(asyncore.dispatcher):
         client_info = self.accept()
         if client_info is None:
             return
-        ServerEventEndPoint(sock=client_info[0])
+        ServerEndPoint(sock=client_info[0])
