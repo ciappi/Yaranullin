@@ -67,8 +67,10 @@ def disconnect(event=None, func=None):
         _EVENTS[ANY] = weakref.WeakValueDictionary()
 
 
-def post(__event__, **kargs):
+def post(__event__, queue=None, **kargs):
     ''' Post an event '''
+    if not queue:
+        queue = _QUEUE
     if not isinstance(__event__, int):
         return
     if __event__ not in _EVENTS and not _EVENTS[ANY]:
@@ -79,15 +81,17 @@ def post(__event__, **kargs):
     # Add a special attribute with the type of the event
     kargs['__event__'] = __event__
     # Post an event only if there is some handler connected.
-    _QUEUE.append(kargs) 
+    queue.append(kargs) 
     return id_
 
 
-def process_queue():
+def process_queue(queue=None):
     ''' Consume the event queue and call all handlers '''
+    if not queue:
+        queue = _QUEUE
     stop = False
-    while _QUEUE:
-        ekargs = _QUEUE.popleft()
+    while queue:
+        ekargs = queue.popleft()
         event = ekargs['__event__']
         # Find all handler for this event
         handlers = {}
