@@ -1,4 +1,4 @@
-# yaranullin/framework.py
+# yaranullin/event_system.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #

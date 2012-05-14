@@ -24,7 +24,7 @@ import collections
 import bz2
 
 from yaranullin.events import TICK
-from yaranullin.framework import post, connect
+from yaranullin.event_system import post, connect
 
 
 FORMAT = struct.Struct('!I')  # for messages up to 2**32 - 1 in length

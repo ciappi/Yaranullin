@@ -20,7 +20,7 @@ import asyncore
 
 from yaranullin.events import GAME_EVENT_UPDATE, GAME_EVENT_PAWN_NEXT, \
         GAME_EVENT_PAWN_UPDATED, GAME_EVENT_BOARD_CHANGE, RESOURCE_UPDATE
-from yaranullin.framework import connect
+from yaranullin.event_system import connect
 from yaranullin.network.base import EndPoint
 
 

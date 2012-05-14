@@ -17,7 +17,7 @@
 import asyncore
 
 from yaranullin.events import TICK
-from yaranullin.framework import post, process_queue
+from yaranullin.event_system import post, process_queue
 
 
 def run(args):

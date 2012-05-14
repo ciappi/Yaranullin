@@ -19,7 +19,7 @@
 from yaranullin.events import JOIN,  GAME_REQUEST_PAWN_MOVE, \
       GAME_REQUEST_PAWN_PLACE, GAME_REQUEST_PAWN_NEXT, GAME_REQUEST_UPDATE, \
       RESOURCE_REQUEST
-from yaranullin.framework import connect, post
+from yaranullin.event_system import connect, post
 from yaranullin.network.base import EndPoint
 
 

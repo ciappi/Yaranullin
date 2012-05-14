@@ -1,4 +1,4 @@
-# yaranullin/tests/framework.py
+# yaranullin/tests/event_system.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -20,8 +20,8 @@ import unittest
 if __name__ == '__main__':
     sys.path.insert(0, ".")
 
-from yaranullin.framework import connect, disconnect, post, _EVENTS, _QUEUE, \
-                              process_queue
+from yaranullin.event_system import connect, disconnect, post, _EVENTS, \
+        _QUEUE, process_queue
 
 Q = []
 

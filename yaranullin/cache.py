@@ -20,7 +20,7 @@ from StringIO import StringIO
 
 from yaranullin.events import CACHE_GET, CACHE_SEND, RESOURCE_UPDATE, \
         RESOURCE_REQUEST
-from yaranullin.framework import connect, post
+from yaranullin.event_system import connect, post
 from yaranullin.config import YR_CACHE_DIR
 
 
