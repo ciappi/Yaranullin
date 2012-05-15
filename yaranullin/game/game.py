@@ -15,22 +15,28 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 from yaranullin.game.board import Board
+from yaranullin.game.load_and_save import load_board_from_tmx
 
 
 class Game(object):
 
     ''' Model and state of Yaranullin '''
 
-    def __init__(self, state=None):
+    def __init__(self, tmxs=[]):
         self._boards = {}
-        if state:
-            self._load_state(state)
+        for tmx in tmxs:
+            self.add_board(load_board_from_tmx(tmx))
 
     def create_board(self, name, width, height):
         ''' Create a new board '''
         board = Board(name, width, height)
         if name not in self._boards:
             self._boards[name] = board
+
+    def add_board(self, board):
+        ''' Add a board to the game '''
+        if board.name not in self._boards:
+            self._boards[board.name] = board
 
     def del_board(self, name):
         ''' Delete the board 'name' '''
@@ -40,7 +46,3 @@ class Game(object):
     def clear(self):
         ''' Clear all the boards '''
         self._boards.clear()
-
-    def _load_state(self, state):
-        ''' Load a state from a file '''
-        # TODO implement
