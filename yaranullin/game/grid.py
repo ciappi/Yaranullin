@@ -14,139 +14,72 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-
-"""The board logic, independent of any event or listener stuff."""
-
-
-class IndexOutOfGrid(Exception):
-
-    pass
+import weakref
 
 
-class Cell(object):
+class NotAValidPosition(Exception):
+    ''' The given position is out of the board '''
 
-    """A simple cell on a board.
-    
-    A cell represent a squared area of 1.5 meters. Every cell has some
-    content, for example a PG, a PNG or an obstacle.
 
-    The cell is identified by its position on the grid, like a matrix element.
-    
-    """
-
-    def __init__(self, x, y, content):
-        """Initialize the Cell.
-
-        Positional arguments:
-        x -- cell column on the grid
-        y -- cell row on the grid
-        content -- the desired content of the cell (i.e. a Pawn)
-
-        """
-        self.x = x
-        self.y = y
-        self.content = content
-
-    def is_free(self, content=None):
-        """True if the content of the cell is content."""
-        if self.content is content:
-            return True
-        else:
-            return False
+class CellsAreNotEmpty(Exception):
+    ''' The given cells are not empty '''
 
 
 class Grid(object):
 
-    """Container of Cell objects.
-
-    Container for all the cells on the same board in a sparse matrix fashion.
-    This means that a Cell exists only if it has some content, otherwise it is
-    deleted from memory.
-
-    """
+    ''' Indexed rectangular area '''
 
     def __init__(self, width, height):
-        """Initialize the Grid.
+        self._grid = {}
+        for x in xrange(width):
+            for y in xrange(height):
+                self._grid[x, y] = weakref.WeakSet()
 
-        Positional arguments:
-        width -- the width of the cell (int >= 1)
-        height -- the height of the cell (int >= 1)
+    def _check_range(self, x, y, width, height):
+        ''' Check if within range '''
+        for xx in xrange(x, width + x):
+            for yy in xrange(y, height + y):
+                if (xx, yy) not in self._grid:
+                    raise NotAValidPosition
 
-        """
-        # (x, y): Cell
-        self._cells = {}
-        assert(width >= 1)
-        assert(height >= 1)
-        self.width = width
-        self.height = height
+    def _set(self, content, x, y, width, height):
+        ''' Add content to the cells in the given range '''
+        for xx in xrange(x, width + x):
+            for yy in xrange(y, height + y):
+                self._grid[xx, yy].add(content)
+        content.pos = x, y
+        content.size = width, height
 
-    def validate_position(self, x1, y1, x2, y2):
-        """Verify that all indexes are within grid boundaries.
+    def remove(self, content):
+        ''' Remove content from the grid '''
+        x, y = content.pos
+        width, height = content.size
+        for xx in xrange(x, width + x):
+            for yy in xrange(y, height + y):
+                if content in self._grid[xx, yy]:
+                    self._grid[xx, yy].remove(content)
+        content.pos = None
+        content.size = None
 
-        Raise an IndexOutOfGrid exception if some element in the area is out
-        of bound.
+    def get_content(self, x, y, width, height):
+        ''' Get all contents in the given range '''
+        contents = set()
+        for xx in xrange(x, width + x):
+            for yy in xrange(y, height + y):
+                if (xx, yy) in self._grid:
+                    contents |= set(self._grid[xx, yy])
+        return contents
 
-        """
-        if not (0 <= x1 < self.width and 0 <= y1 < self.height):
-            raise IndexOutOfGrid
-        if x2 >= self.width or y2 >= self.height:
-            raise IndexOutOfGrid
-
-    def set_cells(self, x1, y1, width, height, content):
-        """Create ot delete the cells within the range."""
-        assert(width >= 1)
-        assert(height >= 1)
-        x2, y2 = x1 + width - 1, y1 + height - 1
-        self.validate_position(x1, y1, x2, y2)
-        # Create a cell or delete it if content is None.
-        for dx in xrange(width):
-            for dy in xrange(height):
-                p = x1 + dx, y1 + dy
-                x, y = p
-                if content is not None:
-                    self._cells[p] = Cell(x, y, content)
-                elif p in self._cells:
-                    del self._cells[p]
-
-    def get_cells(self, x1, y1, width, height):
-        """Get the cells within the range."""
-        assert(width >= 1)
-        assert(height >= 1)
-        cells = []
-        x2, y2 = x1 + width - 1, y1 + height - 1
-        for pos, cell in self._cells.items():
-            if (x1 <= pos[0] <= x2) and (y1 <= pos[1] <= y2):
-                cells.append(cell)
-        return cells
-
-    def is_free(self, x1, y1, width, height, content=None):
-        """True if all Cells within the range are free."""
-        cells = self.get_cells(x1, y1, width, height)
-        for cell in cells:
-            if not cell.is_free(content):
-                return False
-        return True
-
-    def del_cells(self, x1, y1, width, height):
-        """Delete the cells within the range."""
-        self.set_cells(x1, y1, width, height, None)
-
-    def set_content(self, x1, y1, width, height, content):
-        """Set the cells for the given content."""
-        c = content
-        ok = self.is_free(x1, y1, width, height, c)
-        if ok:
-            self.del_content(c)
-            try:
-                self.set_cells(x1, y1, width, height, c)
-            except IndexOutOfGrid:
-                ok = False
-                self.set_cells(c.x, c.y, c.width, c.height, c)
-            else:
-                c.x, c.y, c.width, c.height = x1, y1, width, height
-        return ok
-
-    def del_content(self, content):
-        """Remove the content from the Cells."""
-        c = content
-        self.del_cells(c.x, c.y, c.width, c.height)
+    def place(self, content, x, y, width=None, height=None):
+        ''' Place a content in the grid '''
+        if not width or not height:
+            width, height = content.size
+        self._check_range(x, y, width, height)
+        contents = self.get_content(x, y, width, height)
+        if not contents or (len(contents) == 1 and content in contents):
+            if content.pos:
+                self.remove(content)
+            self._set(content, x, y, width, height)
+        else:
+            raise CellsAreNotEmpty
+ 
