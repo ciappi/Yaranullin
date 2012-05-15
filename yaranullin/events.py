@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-#
-# bin/yrn
+# yaranullin/events.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -16,14 +14,32 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import sys
-import os
+''' The events of Yaranullin ''' 
 
-if __name__ == '__main__':
-    sys.path.insert(0, os.path.dirname(os.path.dirname(
-                    os.path.abspath(__file__))))
+# Basic
+ANY = 0
+QUIT = 1
+TICK = 2
+CACHE_GET = 3
+CACHE_SEND = 4
 
-from yaranullin.main import main
+# Network
+JOIN = 10
+RESOURCE_REQUEST = 11
+RESOURCE_UPDATE = 12
 
-if __name__ == '__main__':
-    main()
+# Game
+GAME_REQUEST_PAWN_NEW = 20
+GAME_REQUEST_PAWN_DEL = 21
+GAME_REQUEST_PAWN_UPDATED = 22
+GAME_REQUEST_PAWN_MOVE = 23
+GAME_REQUEST_PAWN_PLACE = 24
+GAME_REQUEST_PAWN_NEXT = 25
+GAME_REQUEST_BOARD_NEW = 26
+GAME_REQUEST_BOARD_DEL = 27
+GAME_REQUEST_BOARD_CHANGE = 28
+GAME_REQUEST_UPDATE = 29
+GAME_EVENT_UPDATE = 30
+GAME_EVENT_PAWN_NEXT = 31
+GAME_EVENT_PAWN_UPDATED = 32
+GAME_EVENT_BOARD_CHANGE = 33

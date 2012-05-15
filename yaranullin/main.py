@@ -14,37 +14,50 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-''' Main module '''
-
-import traceback
+import argparse
 import sys
+import logging
 
-from yaranullin.main_server import ServerRunner
+LOGGER = logging.getLogger(__name__)
+
+from yaranullin.config import __version__, __platform__
 
 
-def import_client_runner():
-    ''' Lazy import client runner '''
-    try:
-        from yaranullin.main_client import ClientRunner
-    except ImportError:
-        traceback.print_exc(file=sys.stderr)
-        sys.stderr.write('ERROR: Cannot import ClientRunner: %s\n' %
-                         'is pygame installed?')
-        return None
+def main():
+    # Parse input arguments.
+    parser = argparse.ArgumentParser(description='Launches Yaranullin.')
+    parser.add_argument('--debug', action='store_true',
+                        help='Print debugging information')
+    parser.add_argument('--version', action='version',
+                        version='Yaranullin ' + __version__ + ' on ' +
+                        __platform__)
+    subparsers = parser.add_subparsers(dest='cmd', help='commands')
+    client_parser = subparsers.add_parser('client', help='Launch the client')
+    client_parser.add_argument('--host', action='store', type=str,
+                        help='Specify the address of the server.')
+    client_parser.add_argument('--port', action='store', type=int,
+                        help='Specify the port of the server.')
+    server_parser = subparsers.add_parser('server', help='Launch the server')
+    server_parser.add_argument('--game', action='store', type=str,
+                        help='Specify the game to load.')
+    args = parser.parse_args()
+
+    # Set logging level
+    level = logging.INFO
+    fmt = '%(levelname)s: %(message)s'
+    if args.debug:
+        fmt = '%(levelname)s:%(name)s:%(funcName)s() %(message)s'
+        level = logging.DEBUG
+    logging.basicConfig(format=fmt, level=level)
+    LOGGER.debug('Starting %s...', args.cmd)
+
+    # Import the correct runner
+    if args.cmd == 'client':
+        from yaranullin.run_client import run
+    elif args.cmd == 'server':
+        from yaranullin.run_server import run
     else:
-        return ClientRunner
+        sys.exit("Bad command '%s'" % args.cmd)
 
-
-def main(args):
-    ''' Main function '''
-
-    runner = None
-    mode = args.mode
-    if mode == 'server':
-        runner = ServerRunner(args)
-    elif mode == 'client':
-        client_runner_class = import_client_runner()
-        if client_runner_class:
-            runner = client_runner_class(args)
-    if runner:
-        runner.run()
+    # Run
+    run(args)

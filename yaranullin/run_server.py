@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-#
-# bin/yrn
+# yaranullin/run_server.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -16,14 +14,16 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import sys
-import os
+import asyncore
 
-if __name__ == '__main__':
-    sys.path.insert(0, os.path.dirname(os.path.dirname(
-                    os.path.abspath(__file__))))
+from yaranullin.events import TICK
+from yaranullin.event_system import post, process_queue
 
-from yaranullin.main import main
 
-if __name__ == '__main__':
-    main()
+def run(args):
+    ''' Main loop for the server '''
+    stop = False
+    while not stop:
+        post(TICK)
+        stop = process_queue()
+        asyncore.poll(0.01)

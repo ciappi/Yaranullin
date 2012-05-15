@@ -15,15 +15,16 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import os
-import bz2
 
 from StringIO import StringIO
 
-from yaranullin.event_system import Listener, Event
+from yaranullin.events import CACHE_GET, CACHE_SEND, RESOURCE_UPDATE, \
+        RESOURCE_REQUEST
+from yaranullin.event_system import connect, post
 from yaranullin.config import YR_CACHE_DIR
 
 
-class Cache(Listener):
+class Cache(object):
 
     """Cache holder.
 
@@ -33,11 +34,12 @@ class Cache(Listener):
 
     """
 
-    def __init__(self, event_manager):
-        Listener.__init__(self, event_manager)
+    def __init__(self):
         self._cache = {}
+        connect(CACHE_GET, self.cache_get)
+        connect(RESOURCE_UPDATE, self.resource_update)
 
-    def handle_cache_get(self, ev_type, name):
+    def cache_get(self, name):
         """Handle a request for a cached value.
 
         Look for a key entry 'name' in the _cache dictionary, otherwise send
@@ -57,22 +59,21 @@ class Cache(Listener):
                 value = data
             except IOError:
                 # No way, we have to ask the server...
-                self.post(Event('resource-request', name=name))
+                post(RESOURCE_REQUEST, name=name)
                 # Set a fake value to prevent multiple requests.
                 self._cache[name] = None
                 value = None
         if value:
             # Broadcast the resource to all local listeners.
-            self.post(Event('cache-send', name=name, string_io=value))
+            post(CACHE_SEND, name=name, string_io=value)
 
-    def handle_resource_update(self, ev_type, name, data):
+    def resource_update(self, name, resource):
         """Someone sent a resource."""
         fname = os.path.join(YR_CACHE_DIR, name)
-        data = bz2.decompress(data)
-        self.post(Event('cache-send', name=name, string_io=StringIO(data)))
+        post(CACHE_SEND, name=name, string_io=StringIO(resource))
         # Save a copy to disk.
         with open(fname, 'w+b') as f:
-            f.write(data)
+            f.write(resource)
 
 
 class CacheMixIn(object):
@@ -101,7 +102,7 @@ class CacheMixIn(object):
             return self._cache[property_name_from_cache]
         else:
             # We must retrive the property from the cache object
-            self.post(Event('cache-get', name=property_name_from_cache))
+            post(CACHE_GET, name=property_name_from_cache)
             # Set the loading function.
             self._load_funcs[property_name_from_cache] = load_func
             # Prevent further requests
@@ -119,7 +120,7 @@ class CacheMixIn(object):
             setattr(self, property_name_local, value)
         else:
             # We must retrive the property from the cache object
-            self.post(Event('cache-get', name=property_name_from_cache))
+            post(CACHE_GET, name=property_name_from_cache)
             # Set the value to default until we get the real one from the cache
             setattr(self, property_name_local, property_default_value)
             # Set the loading function.
@@ -128,7 +129,7 @@ class CacheMixIn(object):
             self._cache[property_name_from_cache] = None
         self._properties[property_name_local] = property_name_from_cache
 
-    def handle_cache_send(self, ev_type, name, string_io):
+    def handle_cache_send(self, name, string_io):
         """Save received cached data if a loader is registered."""
         # Look if there is a loader registered.
         if name in self._load_funcs:
