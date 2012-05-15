@@ -14,45 +14,33 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from yaranullin.event_system import EventManagerAndListener, Event
 from yaranullin.game.board import Board
 
 
-class Game(EventManagerAndListener):
+class Game(object):
 
-    """Container of Boards."""
+    ''' Model and state of Yaranullin '''
 
-    def __init__(self, event_manager):
-        EventManagerAndListener.__init__(self, event_manager)
-        self.boards = {}
+    def __init__(self, state=None):
+        self._boards = {}
+        if state:
+            self._load_state(state)
 
-    def add_board(self, **kargs):
-        """Create and add a new Board."""
-        new_board = Board(self, **kargs)
-        new_board_id = new_board.uid
-        self.boards[new_board_id] = new_board
-        return new_board_id
+    def create_board(self, name, width, height):
+        ''' Create a new board '''
+        board = Board(name, width, height)
+        if name not in self._boards:
+            self._boards[name] = board
 
-    def del_board(self, board_id):
-        """Delete a board."""
-        board_to_del = self.boards.pop(board_id, None)
-        if board_to_del is not None:
-            pawns_to_del = list(board_to_del.initiatives)
-            for pawn in pawns_to_del:
-                board_to_del.del_pawn(pawn)
-            del board_to_del.grid
-        return board_to_del
+    def del_board(self, name):
+        ''' Delete the board 'name' '''
+        if name in self._boards:
+            del self._boards[name]
 
-    def handle_game_request_board_new(self, ev_type, **kargs):
-        """Handle a request for a new Board."""
-        new_board_id = self.add_board(**kargs)
-        kargs['uid'] = new_board_id
-        event = Event('game-event-board-new', **kargs)
-        self.post(event)
+    def clear(self):
+        ''' Clear all the boards '''
+        self._boards.clear()
 
-    def handle_game_request_board_del(self, ev_type, uid):
-        """Handle the deletion of a Board."""
-        board_to_del = self.del_board(uid)
-        if board_to_del is not None:
-            event = Event('game-event-board-del', uid=uid)
-            self.post(event)
+    def _load_state(self, state):
+        ''' Load a state from a file '''
+        # TODO implement
