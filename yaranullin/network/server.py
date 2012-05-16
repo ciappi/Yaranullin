@@ -56,6 +56,14 @@ class Server(asyncore.dispatcher):
         LOGGER.debug('Server listening on port %d', server_address[1])
         self.listen(5)
 
+    def log_info(self, message, type='info'):
+        try:
+            log = getattr(LOGGER, type)
+        except AttributeError:
+            pass
+        else:
+            log(message)
+
     def handle_accept(self):
         client_info = self.accept()
         if client_info is None:
