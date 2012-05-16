@@ -16,6 +16,10 @@
 
 """ Network client """
 
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
 from yaranullin.events import JOIN,  GAME_REQUEST_PAWN_MOVE, \
       GAME_REQUEST_PAWN_PLACE, GAME_REQUEST_PAWN_NEXT, GAME_REQUEST_UPDATE, \
       RESOURCE_REQUEST
@@ -50,4 +54,5 @@ class ClientEndPoint(EndPoint):
         # We should reconnect if the connection goes down but
         # prevent a reconnection is connection is ok.
         self.connect((host, port))
+        LOGGER.debug('Connecting to %s:%d', host, port)
         post(GAME_REQUEST_UPDATE)
