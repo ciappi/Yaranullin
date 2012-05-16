@@ -125,7 +125,7 @@ class EndPoint(_EndPoint):
     def __init__(self, sock=None, sockets=None):
         _EndPoint.__init__(self, sock, sockets)
         connect(TICK, self.process_queue)
-        self.state = STATE_MESSAGE
+        self.state_msg = STATE_MESSAGE
         self.resource_message = None
 
     def check_in_event(self, **kargs):
@@ -145,20 +145,20 @@ class EndPoint(_EndPoint):
             data = _EndPoint._get_from_in_buffer(self)
             if not data:
                 break
-            if self.state == STATE_MESSAGE:
+            if self.state_msg == STATE_MESSAGE:
                 data = json.loads(data)
                 if not self.check_in_event(**data):
                     continue
                 if 'resource' in data:
-                    self.state = STATE_RESOURCE
+                    self.state_msg = STATE_RESOURCE
                     self.resource_message = data
                 else:
                     post(**data)
-            elif self.state == STATE_RESOURCE:
+            elif self.state_msg == STATE_RESOURCE:
                 self.resource_message['resource'] = bz2.decompress(data)
                 data = dict(self.resource_message)
                 self.resource_message = None
-                self.state = STATE_MESSAGE
+                self.state_msg = STATE_MESSAGE
                 post(**data)
 
     def post(self, **kargs):
