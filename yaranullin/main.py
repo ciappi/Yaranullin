@@ -60,4 +60,7 @@ def main():
         sys.exit("Bad command '%s'" % args.cmd)
 
     # Run
-    run(args)
+    try:
+        run(args)
+    except KeyboardInterrupt:
+        pass
