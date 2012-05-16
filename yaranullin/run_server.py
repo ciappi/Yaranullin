@@ -16,9 +16,14 @@
 
 import asyncore
 
+from yaranullin.config import CONFIG
 from yaranullin.events import TICK
 from yaranullin.event_system import post, process_queue
+from yaranullin.network.server import Server
 
+HOST = ''
+PORT = CONFIG.getint('network', 'port')
+Server((HOST, PORT))
 
 def run(args):
     ''' Main loop for the server '''
