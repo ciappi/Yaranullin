@@ -43,7 +43,7 @@ class ServerEndPoint(EndPoint):
         connect(RESOURCE_UPDATE, self.post)
 
 
-class EventServer(asyncore.dispatcher):
+class Server(asyncore.dispatcher):
 
     """Handle server and create end points"""
 
