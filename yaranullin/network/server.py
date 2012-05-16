@@ -17,6 +17,9 @@
 
 import socket
 import asyncore
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 from yaranullin.events import GAME_EVENT_UPDATE, GAME_EVENT_PAWN_NEXT, \
         GAME_EVENT_PAWN_UPDATED, GAME_EVENT_BOARD_CHANGE, RESOURCE_UPDATE
@@ -50,10 +53,12 @@ class EventServer(asyncore.dispatcher):
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
         self.bind(server_address)
+        LOGGER.debug('Server listening on port %d', server_address[1])
         self.listen(5)
 
     def handle_accept(self):
         client_info = self.accept()
         if client_info is None:
             return
+        LOGGER.debug('Accept connection from %s', client_info[1])
         ServerEndPoint(sock=client_info[0])
