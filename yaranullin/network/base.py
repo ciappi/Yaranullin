@@ -122,8 +122,8 @@ class EndPoint(_EndPoint):
 
     """Interface _EndPoint with Yaranullin's event system"""
 
-    def __init__(self):
-        _EndPoint.__init__(self)
+    def __init__(self, sock=None, sockets=None):
+        _EndPoint.__init__(self, sock, sockets)
         connect(TICK, self.process_queue)
         self.state = STATE_MESSAGE
         self.resource_message = None
