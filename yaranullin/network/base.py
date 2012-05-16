@@ -22,6 +22,9 @@ import socket
 import json
 import collections
 import bz2
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 from yaranullin.events import TICK
 from yaranullin.event_system import post, connect
@@ -57,12 +60,20 @@ class _EndPoint(asyncore.dispatcher):
         if self._in_buffer:
             return self._in_buffer.popleft()
 
+    def log_info(self, message, type='info'):
+        try:
+            log = getattr(LOGGER, type)
+        except AttributeError:
+            pass
+        else:
+            log(message)
+
     def handle_connect(self):
-        pass
+        LOGGER.debug('Connection established')
 
     def handle_close(self):
-        # Delete the wrapper when the connection is done
         self.close()
+        LOGGER.debug('Connection closed')
 
     def writable(self):
         return self._out_buffer
