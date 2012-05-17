@@ -50,20 +50,20 @@ class WeakCallback(object):
 
     def __init__(self, callback):
         try:
-            self.weak_obj = weakref.ref(callback.im_self)
+            self._obj = weakref.ref(callback.im_self)
             self.weak_func = callback.im_func
         except AttributeError:
-            self.weak_obj = None
+            self._obj = None
             self.weak_func = callback
 
     def __call__(self):
         ''' Return a reference to the callback or None '''
-        if self.weak_obj is None:
+        if self._obj is None:
             # It is a function
             return self.weak_func
         else:
             # It is a bound method
-            obj = self.weak_obj()
+            obj = self._obj()
             if obj is None:
                 return None
             else:
