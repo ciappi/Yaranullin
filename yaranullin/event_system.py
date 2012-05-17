@@ -21,141 +21,107 @@ This module is an simple implementation of an event patter.
 '''
 
 import collections
-import inspect
-import weakref
+import logging
 
-from yaranullin.events import TICK, ANY, QUIT
+LOGGER = logging.getLogger(__name__)
+
+from yaranullin.events import ANY, QUIT
+#
+# WeakCallback is a singleton with respect to a callback (i.e. there is only
+# one instance for a given callback).
+#
+from yaranullin.weakcallback import WeakCallback
 
 
 _QUEUE = collections.deque()
-_EVENTS = {}
-_EVENTS[ANY] = weakref.WeakValueDictionary()
+_EVENTS = collections.defaultdict(set)
 
 
-def connect(event, func):
+def connect(event, callback):
     ''' Connect an handler '''    
-    if inspect.isfunction(func):
-        func = {func: func}
-    elif inspect.ismethod(func):
-        func = {func.im_func: func.im_self}
-    else:
+    if not isinstance(event, int):
         return
-    if event not in _EVENTS:
-        _EVENTS[event] = weakref.WeakValueDictionary()
-    _EVENTS[event].update(func)
+    wrapper = WeakCallback(callback)
+    _EVENTS[event].add(wrapper)
 
 
-def disconnect(event=None, func=None):
-    ''' Disconnect an handler '''
-    if func is not None:
-        if inspect.ismethod(func):
-            func = func.im_func
-        if event in _EVENTS:
-            del _EVENTS[event][func]
-        elif event is None:
-            for evnt, handlers in _EVENTS.items():
-                if func in handlers:
-                    del _EVENTS[evnt][func]
-        for evnt in _EVENTS.keys():
-            if not _EVENTS[evnt]:
-                del _EVENTS[evnt]
-    elif event is None:
+def _disconnect(event, callback):
+    ''' Disconnect a callback from an event '''
+    wrapper = WeakCallback(callback)
+    if wrapper in _EVENTS[event]:
+        _EVENTS[event].remove(wrapper)
+
+
+def disconnect(event=None, callback=None):
+    ''' Disconnect callbacks '''
+    if callback is None and event is None:
+        # Remove all callbacks
         _EVENTS.clear()
+    elif callback is not None and event is not None:
+        # Remove at most one callback
+        _disconnect(event, callback)
+    elif event is None:
+        # Remove a callback from all events
+        for event in _EVENTS:
+            _disconnect(event, callback)
     elif event in _EVENTS:
-        del _EVENTS[event]
-    if ANY not in _EVENTS:
-        _EVENTS[ANY] = weakref.WeakValueDictionary()
+        # Delete all callbacks connected to an event
+        _EVENTS.remove(event)
 
 
-def post(__event__, queue=None, **kargs):
+def post(event, attributes=None, queue=None, **kattributes):
     ''' Post an event '''
-    if not queue:
+    if queue is None:
         queue = _QUEUE
-    if not isinstance(__event__, int):
+    if not isinstance(event, int):
         return
-    if __event__ not in _EVENTS and not _EVENTS[ANY]:
+    if not _EVENTS[event] and not _EVENTS[ANY]:
         return
+    event_dict = dict(kattributes)
+    if attributes is not None:
+        try:
+            event_dict.update(attributes)
+        except TypeError:
+            LOGGER.error("Cannot update event dictionary with '%s' object",
+                    str(type(attributes)))
     # Add the id of the dict to the object
-    id_ = id(kargs)
-    kargs['__id__'] = id_
+    id_ = id(event_dict)
+    event_dict['id'] = id_
     # Add a special attribute with the type of the event
-    kargs['__event__'] = __event__
+    event_dict['event'] = event
     # Post an event only if there is some handler connected.
-    queue.append(kargs) 
+    queue.append(event_dict) 
     return id_
 
 
 def process_queue(queue=None):
     ''' Consume the event queue and call all handlers '''
-    if not queue:
+    if queue is None:
         queue = _QUEUE
     stop = False
+    garbage = set()
     while queue:
-        ekargs = queue.popleft()
-        event = ekargs['__event__']
+        event_dict = queue.popleft()
+        event = event_dict['event']
         # Find all handler for this event
-        handlers = {}
-        handlers.update(_EVENTS[event])
-        handlers.update(_EVENTS[ANY])
-        for handler, self in handlers.iteritems():
-            hargs, _, hkeywords, _ = inspect.getargspec(handler)
-            kargs = dict(ekargs)
-            if 'self' in hargs:
-                # We assume that this is a bound method
-                kargs['self'] = self
-            # Check if the handler has ** magic
-            if not hkeywords:
-                # Delete all arguments that the handler cannot take
-                for key in kargs.keys():
-                    if key not in hargs:
-                        del kargs[key]
-            handler(**kargs)
+        handlers = set(_EVENTS[event])
+        handlers |= _EVENTS[ANY]
+        for handler in handlers:
+            if handler() is None:
+                garbage.add(handler)
+                continue
+            try:
+                handler()(event_dict)
+            except TypeError:
+                # An handler can have no arguments
+                handler()()
+        # Garbage collect every dead WeakCallback
+        if garbage:
+            _EVENTS[event] -= garbage
+            # 'garbage.clear()' takes about 80% of the time of 'garbage = set()'
+            garbage.clear()
         if event == QUIT:
             stop = True 
             break
     return stop
 
-
-class Pipe(object):
-
-    ''' Used for communication between two processes.
-    
-    To allow sending and receiving events from two different processes,
-    create an instance of Pipe for each one of them. The in_queue of the
-    first Pipe must be the out_queue of the second and viceversa.
-
-    The default implementation allows all events through the queues.
-    
-    '''
-
-    def __init__(self, in_queue, out_queue):
-        self.in_queue = in_queue
-        self.out_queue = out_queue
-        self.posted_events = set()
-        connect(ANY, self.handle)
-        connect(TICK, self.tick)
-
-    def handle(self, **kargs):
-        ''' Put given event to the out queue '''
-        try:
-            id_ = kargs['__id__']
-            event = kargs['__event__']
-        except KeyError:
-            return
-        if event == TICK:
-            # Never post ticks between processes.
-            return
-        if id_ in self.posted_events:
-            # This event was posted by the pipe, so do not have to post it
-            # back or we will trigger an infinite loop.
-            # Remove the event from the set (the event will be posted here
-            # once) and return
-            self.posted_events.remove(id_)
-            return
-        self.out_queue.put(kargs)
-
-    def tick(self):
-        ''' Get all the event from the in queue '''
-        while not self.in_queue.empty():
-            event = self.in_queue.get()
-            self.posted_events.add(post(**event))

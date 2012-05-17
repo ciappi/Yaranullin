@@ -16,22 +16,22 @@
 
 import sys
 import unittest
+import collections
 
 if __name__ == '__main__':
     sys.path.insert(0, ".")
 
+from yaranullin.weakcallback import WeakCallback
 from yaranullin.event_system import connect, disconnect, post, _EVENTS, \
         _QUEUE, process_queue
 
-Q = []
+Q = collections.deque()
 
-def func_handler(__id__):
+def func_handler(ev):
     ''' Simple function handler '''
-    Q.append(__id__)
-
-
-def magic_handler(**kargs):
-    Q.append(kargs)
+    del ev['id']
+    del ev['event']
+    Q.append(ev)
 
 
 class Handler(object):
@@ -44,68 +44,39 @@ class Handler(object):
 
 class TestEvents(unittest.TestCase):
 
+    def setUp(self):
+        _QUEUE.clear()
+        _EVENTS.clear()
+        Q.clear()
+
     def test_connect(self):
-        disconnect()
-        # Test if a function handler is connected correctly
+        # Connect a single handler
         connect(10, func_handler)
-        self.assertEqual(_EVENTS[10][func_handler], func_handler)
-        # Test if a method is connected correctly
-        h = Handler()
-        connect(20, h.method_handler)
-        im_func = h.method_handler.im_func
-        self.assertEqual(_EVENTS[20][im_func], h)
-        # Function or method should connect only once
+        wrapper = WeakCallback(func_handler)
+        self.assertTrue(10 in _EVENTS)
+        self.assertTrue(wrapper in _EVENTS[10])
+
+    def test_disconnect(self):
+        # Disconnect a single handler
         connect(10, func_handler)
-        connect(20, h.method_handler)
-        self.assertEqual(1, len(_EVENTS[10].keys()))
-        self.assertEqual(1, len(_EVENTS[20].keys()))
-        # Unconnect the last handler for an event
         disconnect(10, func_handler)
-        self.assertFalse(10 in _EVENTS)
-        disconnect(20, h.method_handler)
-        self.assertFalse(20 in _EVENTS)
-        # Unconnect an handler
-        connect(10, func_handler)
-        connect(10, h.method_handler)
-        disconnect(10, func_handler)
-        self.assertFalse(func_handler in _EVENTS[10])
-        self.assertTrue(im_func in _EVENTS[10])
-        # Delete all 10's handlers
-        disconnect(10)
-        self.assertFalse(10 in _EVENTS)
+        wrapper = WeakCallback(func_handler)
+        self.assertFalse(wrapper in _EVENTS[10])
 
     def test_post(self):
-        # Cannot post an event if there are no handler
-        _QUEUE.clear()
-        disconnect()
-        post(10)
-        self.assertFalse(_QUEUE)
-        # Register an handler and post an event
+        # Post a single event
         connect(10, func_handler)
-        id_ = post(10)
-        self.assertEqual(1, len(_QUEUE))
-        # Check if the event if well formatted
-        self.assertEqual({'__id__':id_, '__event__':10}, _QUEUE.popleft())
+        event_dict = {'event': 10, 'id': post(10)}
+        self.failUnlessEqual(event_dict, _QUEUE.popleft())
 
     def test_process_queue(self):
-        global Q
         connect(10, func_handler)
-        for _ in range(3):
-            post(10)
-        _QUEUE_ids = [el['__id__'] for el in _QUEUE]
+        event_dict = {'args1': 1, 'arg2':2}
+        post(10, **event_dict)
+        post(10, event_dict)
         process_queue()
-        self.assertEqual(_QUEUE_ids, Q)
-        # Try magic handler function
-        Q = []
-        _QUEUE.clear()
-        disconnect()
-        connect(10, magic_handler)
-        for _ in range(3):
-            post(10, first='first arg', second='second arg')
-        _QUEUE_events = list(_QUEUE)
-        process_queue()
-        self.assertEqual(_QUEUE_events, Q)
-
+        self.failUnlessEqual(event_dict, Q.popleft())
+        self.failUnlessEqual(event_dict, Q.popleft())
 
 
 if __name__ == '__main__':
