@@ -156,7 +156,7 @@ class EndPoint(_EndPoint):
                     post(**data)
             elif self.state_msg == STATE_RESOURCE:
                 self.resource_message['resource'] = bz2.decompress(data)
-                data = dict(self.resource_message)
+                data = self.resource_message
                 self.resource_message = None
                 self.state_msg = STATE_MESSAGE
                 post(**data)
