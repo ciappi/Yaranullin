@@ -37,6 +37,7 @@ class TestWeakCallback(unittest.TestCase):
         self.failUnlessEqual('called', weak_t()())
         del test
         self.assertIsNone(weak_t())
+        self.assertRaises(TypeError, WeakCallback, 'not a function or method')
 
 
 if __name__ == '__main__':
