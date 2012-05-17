@@ -25,7 +25,7 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
-from yaranullin.events import TICK, ANY, QUIT
+from yaranullin.events import ANY, QUIT
 #
 # WeakCallback is a singleton with respect to a callback (i.e. there is only
 # one instance for a given callback).
@@ -121,48 +121,3 @@ def process_queue(queue=None):
             break
     return stop
 
-
-class Pipe(object):
-
-    ''' Used for communication between two processes.
-    
-    To allow sending and receiving events from two different processes,
-    create an instance of Pipe for each one of them. The in_queue of the
-    first Pipe must be the out_queue of the second and viceversa.
-
-    The default implementation allows all events through the queues.
-    
-    '''
-
-    def __init__(self, in_queue, out_queue):
-        self.in_queue = in_queue
-        self.out_queue = out_queue
-        self.posted_events = set()
-        connect(ANY, self.handle)
-        connect(TICK, self.tick)
-
-    def handle(self, **event_dict):
-        ''' Put given event to the out queue '''
-        try:
-            id_ = event_dict['id']
-            event = event_dict['event']
-        except KeyError:
-            return
-        if event == TICK:
-            # Never post ticks between processes.
-            return
-        if id_ in self.posted_events:
-            # This event was posted by the pipe, so do not have to post it
-            # back or we will trigger an infinite loop.
-            # Remove the event from the set (the event will be posted here
-            # once) and return
-            self.posted_events.remove(id_)
-            return
-        self.out_queue.put(event_dict)
-
-    def tick(self):
-        ''' Get all the event from the in queue '''
-        while not self.in_queue.empty():
-            event_dict = self.in_queue.get()
-            event = event_dict.pop('event')
-            self.posted_events.add(post(event, event_dict))
