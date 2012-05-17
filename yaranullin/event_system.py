@@ -95,8 +95,8 @@ def process_queue(queue=None):
     if queue is None:
         queue = _QUEUE
     stop = False
+    garbage = set()
     while queue:
-        garbage = set()
         event_dict = queue.popleft()
         event = event_dict['event']
         # Find all handler for this event
@@ -114,6 +114,8 @@ def process_queue(queue=None):
         # Garbage collect every dead WeakCallback
         if garbage:
             _EVENTS[event] -= garbage
+            # 'garbage.clear()' takes about 80% of the time of 'garbage = set()'
+            garbage.clear()
         if event == QUIT:
             stop = True 
             break
