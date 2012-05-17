@@ -128,11 +128,11 @@ class EndPoint(_EndPoint):
         self.state_msg = STATE_MESSAGE
         self.resource_message = None
 
-    def check_in_event(self, **kargs):
+    def check_in_event(self, event_dict):
         """Check if an event can be posted on the local event manager."""
         return True
 
-    def check_out_event(self, **kargs):
+    def check_out_event(self, event_dict):
         """Check if an event can be sent over the network."""
         return True
 
@@ -146,30 +146,32 @@ class EndPoint(_EndPoint):
             if not data:
                 break
             if self.state_msg == STATE_MESSAGE:
-                data = json.loads(data)
-                if not self.check_in_event(**data):
+                event_dict = json.loads(data)
+                if not self.check_in_event(event_dict):
                     continue
-                if 'resource' in data:
+                if 'resource' in event_dict:
                     self.state_msg = STATE_RESOURCE
-                    self.resource_message = data
+                    self.resource_message = event_dict
                 else:
-                    post(**data)
+                    event = event_dict['event']
+                    post(event, event_dict)
             elif self.state_msg == STATE_RESOURCE:
-                self.resource_message['resource'] = bz2.decompress(data)
-                data = self.resource_message
+                event_dict = self.resource_message
                 self.resource_message = None
+                event_dict['resource'] = bz2.decompress(data)
                 self.state_msg = STATE_MESSAGE
-                post(**data)
+                event = event_dict['event']
+                post(event, event_dict)
 
-    def post(self, **kargs):
+    def post(self, event_dict):
         """Add an event to the queue of the end_point."""
-        if not self.check_out_event(**kargs):
+        event_dict = dict(event_dict)
+        if not self.check_out_event(event_dict):
             return
-        data = dict(kargs)
-        if 'resource' in data:
-            resource = data.pop('resource')
-            data['resource'] = None
-            self._add_to_out_buffer(json.dumps(data))
+        if 'resource' in event_dict:
+            resource = event_dict.pop('resource')
+            event_dict['resource'] = None
+            self._add_to_out_buffer(json.dumps(event_dict))
             self._add_to_out_buffer(bz2.compress(resource))
         else:
-            self._add_to_out_buffer(json.dumps(data))
+            self._add_to_out_buffer(json.dumps(event_dict))
