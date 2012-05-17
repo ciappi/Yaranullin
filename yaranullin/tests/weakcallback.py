@@ -36,7 +36,7 @@ class TestWeakCallback(unittest.TestCase):
         weak_t = WeakCallback(test.t)
         self.failUnlessEqual('called', weak_t()())
         del test
-        self.failUnlessEqual(None, weak_t())
+        self.assertIsNone(weak_t())
 
 
 if __name__ == '__main__':
