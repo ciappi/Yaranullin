@@ -79,7 +79,11 @@ def post(event, attributes=None, queue=None, **kattributes):
         return
     event_dict = dict(kattributes)
     if attributes is not None:
-        event_dict.update(attributes)
+        try:
+            event_dict.update(attributes)
+        except TypeError:
+            LOGGER.error("Cannot update event dictionary with '%s' object",
+                    str(type(attributes)))
     # Add the id of the dict to the object
     id_ = id(event_dict)
     event_dict['id'] = id_
