@@ -36,6 +36,10 @@ class WeakCallback(object):
     _map = weakref.WeakValueDictionary()
 
     def __new__(cls, callback):
+        if (not inspect.ismethod(callback) and not
+                inspect.isfunction(callback)):
+            raise TypeError("'%s' is not a method or callback" %
+                    str(type(callback)))
         cb_id = id(callback)
         if cb_id in cls._map:
             return cls._map[cb_id]
@@ -45,15 +49,12 @@ class WeakCallback(object):
             return obj
 
     def __init__(self, callback):
-        if inspect.ismethod(callback):
+        try:
             self.weak_obj = weakref.ref(callback.im_self)
             self.weak_func = callback.im_func
-        elif inspect.isfunction(callback):
+        except AttributeError:
             self.weak_obj = None
             self.weak_func = callback
-        else:
-            raise TypeError("'%s' is not a method or callback" %
-                    str(type(callback)))
 
     def __call__(self):
         ''' Return a reference to the callback or None '''
