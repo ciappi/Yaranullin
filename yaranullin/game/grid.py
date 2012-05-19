@@ -15,6 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import weakref
+import collections
 
 
 class NotAValidPosition(Exception):
@@ -29,57 +30,55 @@ class Grid(object):
 
     ''' Indexed rectangular area '''
 
-    def __init__(self, width, height):
-        self._grid = {}
-        for x in xrange(width):
-            for y in xrange(height):
-                self._grid[x, y] = weakref.WeakSet()
+    def __init__(self, size):
+        self.size = size
+        self._grid = collections.defaultdict(weakref.WeakSet())
+        self._contents = weakref.WeakKeyDictionary()
 
-    def _check_range(self, x, y, width, height):
-        ''' Check if within range '''
-        for xx in xrange(x, width + x):
-            for yy in xrange(y, height + y):
-                if (xx, yy) not in self._grid:
-                    raise NotAValidPosition
-
-    def _set(self, content, x, y, width, height):
+    def _put(self, content, pos, size):
         ''' Add content to the cells in the given range '''
-        for xx in xrange(x, width + x):
-            for yy in xrange(y, height + y):
-                self._grid[xx, yy].add(content)
-        content.pos = x, y
-        content.size = width, height
+        if content in self._contents:
+            return
+        self._contents[content] = set()
+        for pos_x in xrange(pos[0], size[0] + pos[0]):
+            for pos_y in xrange(pos[1], size[1] + pos[1]):
+                self._grid[pos_x, pos_y].add(content)
+                self._contents[content].add((pos_x, pos_y))
+        content.pos = pos
+        content.size = size
 
     def remove(self, content):
         ''' Remove content from the grid '''
-        x, y = content.pos
-        width, height = content.size
-        for xx in xrange(x, width + x):
-            for yy in xrange(y, height + y):
-                if content in self._grid[xx, yy]:
-                    self._grid[xx, yy].remove(content)
+        if content not in self._contents:
+            return
+        for cell in self._contents[content]:
+            self._grid[cell].remove(content)
+        del self._contents[content]
         content.pos = None
         content.size = None
 
-    def get_content(self, x, y, width, height):
+    def get_content(self, pos, size):
         ''' Get all contents in the given range '''
         contents = set()
-        for xx in xrange(x, width + x):
-            for yy in xrange(y, height + y):
-                if (xx, yy) in self._grid:
-                    contents |= set(self._grid[xx, yy])
+        for pos_x in xrange(pos[0], size[0] + pos[0]):
+            for pos_y in xrange(pos[1], size[1] + pos[1]):
+                if (pos_x, pos_y) in self._grid:
+                    contents |= set(self._grid[pos_x, pos_y])
         return contents
 
-    def place(self, content, x, y, width=None, height=None):
+    def place(self, content, pos, size=None):
         ''' Place a content in the grid '''
-        if not width or not height:
-            width, height = content.size
-        self._check_range(x, y, width, height)
-        contents = self.get_content(x, y, width, height)
+        if size is None:
+            size = content.size
+        # Check if the cells are within the grid.
+        max_pos = pos[0] + size[0] - 1, pos[1] + size[1] - 1
+        if max_pos[0] >= self.size[0] or max_pos[1] >= self.size[1]:
+            raise NotAValidPosition
+        # Get the contents already in those cells
+        contents = self.get_content(pos, size)
         if not contents or (len(contents) == 1 and content in contents):
-            if content.pos:
-                self.remove(content)
-            self._set(content, x, y, width, height)
+            self.remove(content)
+            self._put(content, pos, size)
         else:
             raise CellsAreNotEmpty
  
