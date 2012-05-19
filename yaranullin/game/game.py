@@ -32,16 +32,18 @@ class Game(object):
         board = Board(name, width, height)
         if name not in self._boards:
             self._boards[name] = board
+            return board
 
     def add_board(self, board):
         ''' Add a board to the game '''
         if board.name not in self._boards:
             self._boards[board.name] = board
+            return board
 
     def del_board(self, name):
         ''' Delete the board 'name' '''
         if name in self._boards:
-            del self._boards[name]
+            return self._boards.pop(name)
 
     def clear(self):
         ''' Clear all the boards '''
