@@ -27,9 +27,9 @@ class Game(object):
         for tmx in tmxs:
             self.add_board(load_board_from_tmx(tmx))
 
-    def create_board(self, name, width, height):
+    def create_board(self, name, size):
         ''' Create a new board '''
-        board = Board(name, width, height)
+        board = Board(name, size)
         if name not in self._boards:
             self._boards[name] = board
             return board

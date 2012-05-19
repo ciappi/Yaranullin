@@ -46,7 +46,7 @@ def load_board_from_tmx(name):
         LOGGER.error("tilewidth != tileheight: tiles must be square")
         return
     # Create a new board
-    board =  Board(name, width, height)
+    board =  Board(name, (width, height))
     # Find pawn object groups
     pawns = None
     for objectgroup in tmx_map.findall('objectgroup'):
@@ -61,7 +61,7 @@ def load_board_from_tmx(name):
             x = int(pawn.attrib['x']) // tilewidth
             y = int(pawn.attrib['y']) // tilewidth
             initiative = int(_get_property(pawn, 'initiative'))
-            board.create_pawn(name, initiative, x, y, width, height)
+            board.create_pawn(name, initiative, (x, y), (width, height))
     return board
 
 

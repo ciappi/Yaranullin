@@ -22,19 +22,18 @@ class Board(object):
     
     ''' The board where the pawns lie '''
 
-    def __init__(self, name, width, height):
+    def __init__(self, name, size):
         self.name = name
-        self.width = width
-        self.height = height
+        self.size = size
         self.initiatives = []
         self.pawns = {}
         self.grid = Grid(width, height)
 
-    def create_pawn(self, name, initiative, x, y, width, height):
+    def create_pawn(self, name, initiative, pos, size):
         ''' Create a new Pawn '''
-        pawn = Pawn(name, initiative, width, height)
+        pawn = Pawn(name, initiative, size)
         try:
-            self.grid.place(pawn, x, y)
+            self.grid.place(pawn, pos)
         except (NotAValidPosition, CellsAreNotEmpty):
             pass
         else:
@@ -54,10 +53,10 @@ class Board(object):
             self.initiatives.remove(pawn)
             return pawn
 
-    def move_pawn(self, pawn, x, y):
-        ''' Move the pawn 'name' to x, y '''
+    def move_pawn(self, pawn, pos):
+        ''' Move the pawn 'name' to pos'''
         try:
-            self.grid.place(pawn, x, y)
+            self.grid.place(pawn, pos)
         except (NotAValidPosition, CellsAreNotEmpty):
             pass
         else:

@@ -19,16 +19,16 @@ class _CellContent(object):
 
     ''' Generic content of a board's cell '''
 
-    def __init__(self, width, height):
+    def __init__(self, size):
         self.pos = None
-        self.size = width, height
+        self.size = size
 
 
 class Pawn(_CellContent):
 
     '''A PG, PNG or a monster '''
 
-    def __init__(self, name, initiative, width, height):
-        _CellContent.__init__(self, width, height)
+    def __init__(self, name, initiative, size):
+        _CellContent.__init__(self, size)
         self.name = name
         self.initiative = initiative
