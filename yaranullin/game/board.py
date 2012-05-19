@@ -42,14 +42,17 @@ class Board(object):
             self.initiatives.append(pawn)
             self.initiatives.sort(key=lambda pawn: pawn.initiative,
                     reverse=True)
+            return pawn
 
     def del_pawn(self, name):
         ''' Delete the pawn 'name' '''
         try:
             pawn = self.pawns.pop(name)
-            self.initiatives.remove(pawn)
         except KeyError:
-            return
+            pass
+        else:
+            self.initiatives.remove(pawn)
+            return pawn
 
     def move_pawn(self, pawn, x, y):
         ''' Move the pawn 'name' to x, y '''
@@ -57,3 +60,5 @@ class Board(object):
             self.grid.place(pawn, x, y)
         except (NotAValidPosition, CellsAreNotEmpty):
             pass
+        else:
+            return True
