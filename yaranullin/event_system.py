@@ -38,7 +38,7 @@ _EVENTS = collections.defaultdict(set)
 
 
 def connect(event, callback):
-    ''' Connect an handler '''    
+    ''' Connect a callback to an event '''
     if not isinstance(event, int):
         return
     wrapper = WeakCallback(callback)
