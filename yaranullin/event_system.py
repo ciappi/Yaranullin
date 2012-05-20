@@ -16,7 +16,7 @@
 
 '''The event system of Yaranullin.
 
-This module is an simple implementation of an event patter.
+This module is a simple implementation of an event pattern.
 
 '''
 
