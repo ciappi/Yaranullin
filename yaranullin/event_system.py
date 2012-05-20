@@ -89,7 +89,7 @@ def post(event, attributes=None, queue=None, **kattributes):
     event_dict['id'] = id_
     # Add a special attribute with the type of the event
     event_dict['event'] = event
-    # Post an event only if there is some handler connected.
+    # Post an event only if there is some handler connected
     queue.append(event_dict) 
     return id_
 
