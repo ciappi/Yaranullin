@@ -16,30 +16,32 @@
 
 ''' The events of Yaranullin ''' 
 
+INFO = {
 # Basic
-ANY = 0
-QUIT = 1
-TICK = 2
-CACHE_GET = 3
-CACHE_SEND = 4
+"any": "Shortcut for all events",
+"quit": "Quit the event loop and exit",
+"tick": "Posted at every iteration of the event loop",
+"cache_get": "",
+"cache_send": "",
 
 # Network
-JOIN = 10
-RESOURCE_REQUEST = 11
-RESOURCE_UPDATE = 12
+"join": "Request to join a server",
+"resource_request": "",
+"resource_update": "",
 
 # Game
-GAME_REQUEST_PAWN_NEW = 20
-GAME_REQUEST_PAWN_DEL = 21
-GAME_REQUEST_PAWN_UPDATED = 22
-GAME_REQUEST_PAWN_MOVE = 23
-GAME_REQUEST_PAWN_PLACE = 24
-GAME_REQUEST_PAWN_NEXT = 25
-GAME_REQUEST_BOARD_NEW = 26
-GAME_REQUEST_BOARD_DEL = 27
-GAME_REQUEST_BOARD_CHANGE = 28
-GAME_REQUEST_UPDATE = 29
-GAME_EVENT_UPDATE = 30
-GAME_EVENT_PAWN_NEXT = 31
-GAME_EVENT_PAWN_UPDATED = 32
-GAME_EVENT_BOARD_CHANGE = 33
+"game_request_pawn_new": "",
+"game_request_pawn_del": "",
+"game_request_pawn_updated": "",
+"game_request_pawn_move": "",
+"game_request_pawn_place": "",
+"game_request_pawn_next": "",
+"game_request_board_new": "",
+"game_request_board_del": "",
+"game_request_board_change": "",
+"game_request_update": "",
+"game_event_update": "",
+"game_event_pawn_next": "",
+"game_event_pawn_updated": "",
+"game_event_board_change": "",
+}
