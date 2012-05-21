@@ -51,29 +51,29 @@ class TestEvents(unittest.TestCase):
 
     def test_connect(self):
         # Connect a single handler
-        connect(10, func_handler)
+        connect('test', func_handler)
         wrapper = WeakCallback(func_handler)
-        self.assertTrue(10 in _EVENTS)
-        self.assertTrue(wrapper in _EVENTS[10])
+        self.assertTrue('test' in _EVENTS)
+        self.assertTrue(wrapper in _EVENTS['test'])
 
     def test_disconnect(self):
         # Disconnect a single handler
-        connect(10, func_handler)
-        disconnect(10, func_handler)
+        connect('test', func_handler)
+        disconnect('test', func_handler)
         wrapper = WeakCallback(func_handler)
-        self.assertFalse(wrapper in _EVENTS[10])
+        self.assertFalse(wrapper in _EVENTS['test'])
 
     def test_post(self):
         # Post a single event
-        connect(10, func_handler)
-        event_dict = {'event': 10, 'id': post(10)}
+        connect('test', func_handler)
+        event_dict = {'event': 'test', 'id': post('test')}
         self.failUnlessEqual(event_dict, _QUEUE.popleft())
 
     def test_process_queue(self):
-        connect(10, func_handler)
+        connect('test', func_handler)
         event_dict = {'args1': 1, 'arg2':2}
-        post(10, **event_dict)
-        post(10, event_dict)
+        post('test', **event_dict)
+        post('test', event_dict)
         process_queue()
         self.failUnlessEqual(event_dict, Q.popleft())
         self.failUnlessEqual(event_dict, Q.popleft())
