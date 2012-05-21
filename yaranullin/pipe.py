@@ -16,7 +16,6 @@
 
 ''' Communication between processes '''
 
-from yaranullin.events import TICK, ANY
 from yaranullin.event_system import post, connect
 
 
@@ -36,8 +35,8 @@ class Pipe(object):
         self.in_queue = in_queue
         self.out_queue = out_queue
         self.posted_events = set()
-        connect(ANY, self.handle)
-        connect(TICK, self.tick)
+        connect('any', self.handle)
+        connect('tick', self.tick)
 
     def handle(self, **event_dict):
         ''' Put given event to the out queue '''
@@ -46,7 +45,7 @@ class Pipe(object):
             event = event_dict['event']
         except KeyError:
             return
-        if event == TICK:
+        if event == 'tick':
             # Never post ticks between processes.
             return
         if id_ in self.posted_events:
