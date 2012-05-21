@@ -20,9 +20,6 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
-from yaranullin.events import JOIN,  GAME_REQUEST_PAWN_MOVE, \
-      GAME_REQUEST_PAWN_PLACE, GAME_REQUEST_PAWN_NEXT, GAME_REQUEST_UPDATE, \
-      RESOURCE_REQUEST
 from yaranullin.event_system import connect, post
 from yaranullin.network.base import EndPoint
 
@@ -42,12 +39,12 @@ class ClientEndPoint(EndPoint):
 
     def _connect_handlers(self):
         ''' Connect the events to send to the sever '''
-        connect(JOIN, self.join)
-        connect(GAME_REQUEST_PAWN_MOVE, self.post)
-        connect(GAME_REQUEST_PAWN_PLACE, self.post)
-        connect(GAME_REQUEST_PAWN_NEXT, self.post)
-        connect(GAME_REQUEST_UPDATE, self.post)
-        connect(RESOURCE_REQUEST, self.post)
+        connect('join', self.join)
+        connect('game_request_pawn_move', self.post)
+        connect('game_request_pawn_place', self.post)
+        connect('game_request_pawn_next', self.post)
+        connect('game_request_update', self.post)
+        connect('resource_request', self.post)
 
     def join(self, host, port):
         """Try to join a remote server."""
@@ -55,4 +52,4 @@ class ClientEndPoint(EndPoint):
         # prevent a reconnection is connection is ok.
         self.connect((host, port))
         LOGGER.debug('Connecting to %s:%d', host, port)
-        post(GAME_REQUEST_UPDATE)
+        post('game_request_update')

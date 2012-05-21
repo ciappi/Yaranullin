@@ -21,8 +21,6 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
-from yaranullin.events import GAME_EVENT_UPDATE, GAME_EVENT_PAWN_NEXT, \
-        GAME_EVENT_PAWN_UPDATED, GAME_EVENT_BOARD_CHANGE, RESOURCE_UPDATE
 from yaranullin.event_system import connect
 from yaranullin.network.base import EndPoint
 
@@ -36,11 +34,11 @@ class ServerEndPoint(EndPoint):
         self._connect_handlers()
 
     def _connect_handlers(self):
-        connect(GAME_EVENT_UPDATE, self.post)
-        connect(GAME_EVENT_PAWN_NEXT, self.post)
-        connect(GAME_EVENT_PAWN_UPDATED, self.post)
-        connect(GAME_EVENT_BOARD_CHANGE, self.post)
-        connect(RESOURCE_UPDATE, self.post)
+        connect('game_event_update', self.post)
+        connect('game_event_pawn_next', self.post)
+        connect('game_event_pawn_updated', self.post)
+        connect('game_event_board_change', self.post)
+        connect('resource_update', self.post)
 
 
 class Server(asyncore.dispatcher):

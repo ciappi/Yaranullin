@@ -26,7 +26,6 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
-from yaranullin.events import TICK
 from yaranullin.event_system import post, connect
 
 
@@ -124,7 +123,7 @@ class EndPoint(_EndPoint):
 
     def __init__(self, sock=None, sockets=None):
         _EndPoint.__init__(self, sock, sockets)
-        connect(TICK, self.process_queue)
+        connect('tick', self.process_queue)
         self.state_msg = STATE_MESSAGE
         self.resource_message = None
 
