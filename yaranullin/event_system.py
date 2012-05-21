@@ -25,7 +25,6 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
-from yaranullin.events import ANY, QUIT
 #
 # WeakCallback is a singleton with respect to a callback (i.e. there is only
 # one instance for a given callback).
@@ -39,7 +38,7 @@ _EVENTS = collections.defaultdict(set)
 
 def connect(event, callback):
     ''' Connect a callback to an event '''
-    if not isinstance(event, int):
+    if not isinstance(event, str):
         raise RuntimeError('event_system.connect(): invalid event type')
     wrapper = WeakCallback(callback)
     _EVENTS[event].add(wrapper)
@@ -73,10 +72,10 @@ def post(event, attributes=None, queue=None, **kattributes):
     ''' Post an event '''
     if queue is None:
         queue = _QUEUE
-    if not isinstance(event, int):
+    if not isinstance(event, str):
         raise RuntimeError('event_system.post(): invalid event type')
-    if not _EVENTS[event] and not _EVENTS[ANY]:
-        LOGGER.warning('No callback registered for event %d: dropping...',
+    if not _EVENTS[event] and not _EVENTS['any']:
+        LOGGER.warning('No callback registered for event %s: dropping...',
                 event)
         return
     event_dict = dict(kattributes)
@@ -106,7 +105,7 @@ def process_queue(queue=None):
         event = event_dict['event']
         # Find all handler for this event
         handlers = set(_EVENTS[event])
-        handlers |= _EVENTS[ANY]
+        handlers |= _EVENTS['any']
         for handler in handlers:
             if handler() is None:
                 garbage.add(handler)
@@ -121,7 +120,7 @@ def process_queue(queue=None):
             _EVENTS[event] -= garbage
             # 'garbage.clear()' takes about 80% of the time of 'garbage = set()'
             garbage.clear()
-        if event == QUIT:
+        if event == 'quit':
             stop = True 
             break
     return stop
