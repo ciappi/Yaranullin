@@ -83,8 +83,9 @@ def post(event, attributes=None, queue=None, **kattributes):
         try:
             event_dict.update(attributes)
         except TypeError:
-            LOGGER.error("Cannot update event dictionary with '%s' object",
+            LOGGER.exception("Cannot update event dictionary with '%s' object",
                     str(type(attributes)))
+            raise
     # Add the id of the dict to the object
     id_ = id(event_dict)
     event_dict['id'] = id_
