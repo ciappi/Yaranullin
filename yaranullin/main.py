@@ -62,3 +62,5 @@ def main():
         run(args)
     except KeyboardInterrupt:
         pass
+    except:
+        LOGGER.exception("Unhandled exception")
