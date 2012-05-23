@@ -38,7 +38,7 @@ _EVENTS = collections.defaultdict(set)
 
 def connect(event, callback):
     ''' Connect a callback to an event '''
-    if not isinstance(event, str):
+    if not isinstance(event, basestring):
         raise RuntimeError('event_system.connect(): invalid event type')
     wrapper = WeakCallback(callback)
     _EVENTS[event].add(wrapper)
@@ -72,7 +72,7 @@ def post(event, attributes=None, queue=None, **kattributes):
     ''' Post an event '''
     if queue is None:
         queue = _QUEUE
-    if not isinstance(event, str):
+    if not isinstance(event, basestring):
         raise RuntimeError('event_system.post(): invalid event type')
     if not _EVENTS[event] and not _EVENTS['any']:
         LOGGER.warning('No callback registered for event %s: dropping...',
