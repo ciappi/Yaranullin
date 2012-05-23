@@ -28,7 +28,7 @@ class Game(object):
 
     def __init__(self, *tmxs):
         LOGGER.debug("Initializing game...")
-        self._boards = {}
+        self.boards = {}
         for tmx in tmxs:
             LOGGER.info("Loading board from '%s'", tmx)
             self.add_board(load_board_from_tmx(tmx))
@@ -37,8 +37,8 @@ class Game(object):
     def create_board(self, name, size):
         ''' Create a new board '''
         board = Board(name, size)
-        if name not in self._boards:
-            self._boards[name] = board
+        if name not in self.boards:
+            self.boards[name] = board
             LOGGER.info("Created board with name '%s' and size (%d, %d)", 
                     name, size[0], size[1])
             return board
@@ -46,16 +46,16 @@ class Game(object):
 
     def add_board(self, board):
         ''' Add a board to the game '''
-        if board.name not in self._boards:
-            self._boards[board.name] = board
+        if board.name not in self.boards:
+            self.boards[board.name] = board
             LOGGER.info("Added board '%s'", board.name)
             return board
-        LOGGER.error("A board '%s' already exists", name)
+        LOGGER.error("A board '%s' already exists", board.name)
 
     def del_board(self, name):
         ''' Delete the board 'name' '''
-        if name in self._boards:
-            board = self._boards.pop(name)
+        if name in self.boards:
+            board = self.boards.pop(name)
             LOGGER.info("Deleted board '%s'", name)
             return board
         LOGGER.error("A board '%s' cannot be found", name)
@@ -63,7 +63,7 @@ class Game(object):
     def create_pawn(self, bname, pname, initiative, pos, size):
         ''' Add a pawn to a board '''
         try:
-            board = self._boards[bname]
+            board = self.boards[bname]
         except KeyError:
             LOGGER.warning("Board '%s' not found", bname)
         else:
@@ -72,7 +72,7 @@ class Game(object):
     def move_pawn(self, bname, pname, pos, size=None):
         ''' Move a pawn '''
         try:
-            board = self._boards[bname]
+            board = self.boards[bname]
         except KeyError:
             LOGGER.warning("Board '%s' not found", bname)
         else:
@@ -81,7 +81,7 @@ class Game(object):
     def del_pawn(self, bname, pname):
         ''' Remove a pawn '''
         try:
-            board = self._boards[bname]
+            board = self.boards[bname]
         except KeyError:
             LOGGER.warning("Board '%s' not found", bname)
         else:
@@ -89,6 +89,6 @@ class Game(object):
 
     def clear(self):
         ''' Clear all the boards '''
-        self._boards.clear()
+        self.boards.clear()
         LOGGER.info("Deleted all boards from the game")
 
