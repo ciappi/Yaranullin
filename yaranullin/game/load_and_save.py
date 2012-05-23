@@ -15,54 +15,67 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import os
-import logging
-
-LOGGER = logging.getLogger(__name__)
 
 from xml.etree import ElementTree
 
 from yaranullin.config import YR_SAVE_DIR
-from yaranullin.game.board import Board
 
 
-def load_board_from_tmx(name):
+class ParseError(SyntaxError):
+    ''' Error parsing tmx file '''
+
+
+def load_board_from_tmx(name, in_place=True):
     ''' Load and return a board from a tmx file '''
+    if in_place:
+        from yaranullin.game.board import Board
+    else:
+        from yaranullin.event_system import post
     complete_path = os.path.join(YR_SAVE_DIR, name) 
-    tmx_map = None
     try:
         with open(complete_path) as tmx_file:
             tmx_map = ElementTree.fromstring(tmx_file.read())
     except IOError:
-        pass
-    if tmx_map is None:
-        LOGGER.error("Cannot open tmx file '%s'", complete_path)
-        return
+        raise
+    except:
+        raise ParseError("Error parsing '%s'" % complete_path)
     # Save basic board attribute
-    name = os.path.splitext(os.path.basename(name))[0]
-    width = int(tmx_map.attrib['width'])
-    height = int(tmx_map.attrib['height'])
+    bname = os.path.splitext(os.path.basename(name))[0]
+    size = int(tmx_map.attrib['width']), int(tmx_map.attrib['height'])
     tilewidth = int(tmx_map.attrib['tilewidth'])
     if tilewidth != int(tmx_map.attrib['tileheight']):
-        LOGGER.error("tilewidth != tileheight: tiles must be square")
-        return
-    # Create a new board
-    board =  Board(name, (width, height))
+        raise ParseError("tilewidth != tileheight: tiles must be square")
+    if in_place:
+        # Create a new board
+        board = Board(name, size)
+    else:
+        # Request a new board
+        post('game-request-board-new', name=bname, size=size)
     # Find pawn object groups
     pawns = None
     for objectgroup in tmx_map.findall('objectgroup'):
         if objectgroup.attrib['name'] in ('Pawns', 'pawns', 'PAWNS'):
             pawns = objectgroup
+            break
     if pawns is not None:
         for pawn in pawns.findall('object'):
             name = pawn.attrib['name']
             # Minimum width and height must be 1
-            width = max(int(pawn.attrib['width']) // tilewidth, 1)
-            height = max(int(pawn.attrib['height']) // tilewidth, 1)
-            x = int(pawn.attrib['x']) // tilewidth
-            y = int(pawn.attrib['y']) // tilewidth
-            initiative = int(_get_property(pawn, 'initiative'))
-            board.create_pawn(name, initiative, (x, y), (width, height))
-    return board
+            size = (max(int(pawn.attrib['width']) // tilewidth, 1),
+                    max(int(pawn.attrib['height']) // tilewidth, 1))
+            pos = (int(pawn.attrib['x']) // tilewidth,
+                    int(pawn.attrib['y']) // tilewidth)
+            try:
+                initiative = int(_get_property(pawn, 'initiative'))
+            except KeyError:
+                raise ParseError("Error parsing pawn '%s'" % name)
+            if in_place:
+                board.create_pawn(name, initiative, pos, size)
+            else:
+                post('game-request-pawn-new', bname=bname, pname=name,
+                        initiative=initiative, pos=pos, size=size)
+    if in_place:
+        return board
 
 
 def _get_property(tag, name):
