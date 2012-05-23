@@ -34,11 +34,11 @@ class ServerEndPoint(EndPoint):
         self._connect_handlers()
 
     def _connect_handlers(self):
-        connect('game_event_update', self.post)
-        connect('game_event_pawn_next', self.post)
-        connect('game_event_pawn_updated', self.post)
-        connect('game_event_board_change', self.post)
-        connect('resource_update', self.post)
+        connect('game-event-update', self.post)
+        connect('game-event-pawn-next', self.post)
+        connect('game-event-pawn-updated', self.post)
+        connect('game-event-board-change', self.post)
+        connect('resource-update', self.post)
 
 
 class Server(asyncore.dispatcher):
