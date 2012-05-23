@@ -42,6 +42,7 @@ class Game(object):
             LOGGER.info("Created board with name '%s' and size (%d, %d)", 
                     name, size[0], size[1])
             return board
+        LOGGER.error("A board '%s' already exists", name)
 
     def add_board(self, board):
         ''' Add a board to the game '''
@@ -49,6 +50,7 @@ class Game(object):
             self._boards[board.name] = board
             LOGGER.info("Added board '%s'", board.name)
             return board
+        LOGGER.error("A board '%s' already exists", name)
 
     def del_board(self, name):
         ''' Delete the board 'name' '''
@@ -56,6 +58,7 @@ class Game(object):
             board = self._boards.pop(name)
             LOGGER.info("Deleted board '%s'", name)
             return board
+        LOGGER.error("A board '%s' cannot be found", name)
 
     def create_pawn(self, bname, pname, initiative, pos, size):
         ''' Add a pawn to a board '''
@@ -88,3 +91,4 @@ class Game(object):
         ''' Clear all the boards '''
         self._boards.clear()
         LOGGER.info("Deleted all boards from the game")
+
