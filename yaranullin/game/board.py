@@ -96,4 +96,4 @@ class Board(object):
         else:
             LOGGER.debug("Moving pawn '%s' to (%d, %d)... done", name, pos[0],
                     pos[1])
-            return True
+            return pawn
