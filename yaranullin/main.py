@@ -37,8 +37,9 @@ def main():
     client_parser.add_argument('--port', action='store', type=int,
                         help='Specify the port of the server')
     server_parser = subparsers.add_parser('server', help='Launch the server')
-    server_parser.add_argument('--game', action='store', type=str,
-                        help='Specify the game to load.')
+    server_parser.add_argument('--board', '-b', action='append', default=[],
+                        help='Specify a board to load. More value can be '
+                        'provided to load multiple boards')
     args = parser.parse_args()
 
     # Set logging level
