@@ -24,7 +24,7 @@ from yaranullin.config import __version__, __platform__
 
 def main():
     # Parse input arguments.
-    parser = argparse.ArgumentParser(description='Launches Yaranullin.')
+    parser = argparse.ArgumentParser(description='Launches Yaranullin')
     parser.add_argument('--debug', action='store_true',
                         help='Print debugging information')
     parser.add_argument('--version', action='version',
@@ -33,9 +33,9 @@ def main():
     subparsers = parser.add_subparsers(dest='cmd', help='commands')
     client_parser = subparsers.add_parser('client', help='Launch the client')
     client_parser.add_argument('--host', action='store', type=str,
-                        help='Specify the address of the server.')
+                        help='Specify the address of the server')
     client_parser.add_argument('--port', action='store', type=int,
-                        help='Specify the port of the server.')
+                        help='Specify the port of the server')
     server_parser = subparsers.add_parser('server', help='Launch the server')
     server_parser.add_argument('--game', action='store', type=str,
                         help='Specify the game to load.')
