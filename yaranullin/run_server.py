@@ -17,7 +17,6 @@
 import asyncore
 
 from yaranullin.config import CONFIG
-from yaranullin.events import TICK
 from yaranullin.event_system import post, process_queue
 from yaranullin.network.server import Server
 
@@ -29,6 +28,6 @@ def run(args):
     ''' Main loop for the server '''
     stop = False
     while not stop:
-        post(TICK)
+        post('tick')
         stop = process_queue()
         asyncore.poll(0.01)
