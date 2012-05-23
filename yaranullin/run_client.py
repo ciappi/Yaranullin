@@ -17,20 +17,19 @@
 import asyncore
 
 from yaranullin.config import CONFIG
-from yaranullin.events import TICK, JOIN
 from yaranullin.event_system import post, process_queue
 from yaranullin.network.client import ClientEndPoint
 
 # Initialize network
-END_POINT = ClientEndPoint()
+ClientEndPoint()
 HOST = CONFIG.get('network', 'host')
 PORT = CONFIG.getint('network', 'port')
 
 def run(args):
     ''' Main loop for the client '''
     stop = False
-    post(JOIN, host=HOST, port=PORT)
+    post('join', host=HOST, port=PORT)
     while not stop:
-        post(TICK)
+        post('tick')
         stop = process_queue()
         asyncore.poll(0.01)
