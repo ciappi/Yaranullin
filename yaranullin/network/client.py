@@ -40,11 +40,11 @@ class ClientEndPoint(EndPoint):
     def _connect_handlers(self):
         ''' Connect the events to send to the sever '''
         connect('join', self.join)
-        connect('game_request_pawn_move', self.post)
-        connect('game_request_pawn_place', self.post)
-        connect('game_request_pawn_next', self.post)
-        connect('game_request_update', self.post)
-        connect('resource_request', self.post)
+        connect('game-request-pawn-move', self.post)
+        connect('game-request-pawn-place', self.post)
+        connect('game-request-pawn-next', self.post)
+        connect('game-request-update', self.post)
+        connect('resource-request', self.post)
 
     def join(self, host, port):
         """Try to join a remote server."""
@@ -52,4 +52,4 @@ class ClientEndPoint(EndPoint):
         # prevent a reconnection is connection is ok.
         self.connect((host, port))
         LOGGER.debug('Connecting to %s:%d', host, port)
-        post('game_request_update')
+        post('game-request-update')
