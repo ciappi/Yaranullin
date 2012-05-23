@@ -15,7 +15,6 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import argparse
-import sys
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -56,8 +55,6 @@ def main():
         from yaranullin.run_client import run
     elif args.cmd == 'server':
         from yaranullin.run_server import run
-    else:
-        sys.exit("Bad command '%s'" % args.cmd)
 
     # Run
     try:
