@@ -34,16 +34,22 @@ if 'HOME' not in os.environ:
         sys.exit('Cannot find home folder')
 else:
     HOME_DIR = os.environ['HOME']
-YR_DIR = os.path.join(HOME_DIR, '.yaranullin')
+
+if __platform__ == 'Windows':
+    YR_DIR = os.path.join(HOME_DIR, 'yaranullin')
+else:
+    YR_DIR = os.path.join(HOME_DIR, '.yaranullin')
+
 # Define resources and saves folders.
-YR_RES_DIR = os.path.join(YR_DIR, 'resources')
-YR_CACHE_DIR = os.path.join(YR_RES_DIR, 'cache')
+YR_FONT_DIR = os.path.join(YR_DIR, 'fonts')
+YR_CACHE_DIR = os.path.join(YR_DIR, 'cache')
 YR_SAVE_DIR = os.path.join(YR_DIR, 'saves')
-for folder in (YR_RES_DIR, YR_CACHE_DIR, YR_SAVE_DIR):
+for folder in (YR_FONT_DIR, YR_CACHE_DIR, YR_SAVE_DIR):
     try:
         os.makedirs(folder)
     except OSError:
         pass
+
 # Installed config file.
 MAIN_CONFIG_FILE = os.path.join(sys.prefix, 'share', 'yaranullin',
                                 'yaranullin.ini')
@@ -52,25 +58,26 @@ if not os.path.exists(MAIN_CONFIG_FILE):
     MAIN_CONFIG_FILE = os.path.join(os.path.split(\
                        os.path.dirname(__file__))[0], 'data', 'yaranullin.ini')
 
+# Create a global configuration object and use args to update configuration
+CONFIG = ConfigParser.RawConfigParser(allow_no_value=True)
+
+# Try to load main config file, exit on fail
+try:
+    CONFIG.readfp(open(MAIN_CONFIG_FILE))
+except IOError as why:
+    if why.errno == 2:
+        sys.exit("Unable to find main configuration file")
+    raise
+except ConfigParser.Error:
+    sys.exit('Unable to read main configuration file')
+
+
 # User provided config file
 USER_CONFIG_FILE = os.path.join(YR_DIR, 'yaranullin.ini')
+# Update CONFIG
+CONFIG.read(USER_CONFIG_FILE)
 
-# Colors to use for pawns. XXX this is not their place...
-COLORS = ['red', 'violetred', 'gold', 'maroon', 'turquoise', 'green',
-          'forestgreen', 'darkseagreen', 'dodgerblue3']
-
-# Log related stuff.
+# Log files
 LOG_FILE_CLIENT = os.path.join(YR_DIR, 'client.log')
 LOG_FILE_SERVER = os.path.join(YR_DIR, 'server.log')
 LOG_FILE_EDITOR = os.path.join(YR_DIR, 'editor.log')
-LOG_LEVEL = 'DEBUG'
-
-# Create a global configuration object and use args to update configuration
-CONFIG = ConfigParser.RawConfigParser(allow_no_value=True)
-# check if this file exists, otherwise exit.
-try:
-    CONFIG.readfp(open(MAIN_CONFIG_FILE))
-except:
-    sys.exit('Cannot find the main configuration file')
-# If the user has a custom config file, read it.
-CONFIG.read(USER_CONFIG_FILE)
