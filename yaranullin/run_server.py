@@ -19,6 +19,7 @@ import asyncore
 from yaranullin.config import CONFIG
 from yaranullin.event_system import post, process_queue
 from yaranullin.network.server import Server
+from yaranullin.game.game_wrapper import GameWrapper
 
 HOST = ''
 PORT = CONFIG.getint('network', 'port')
@@ -26,6 +27,7 @@ Server((HOST, PORT))
 
 def run(args):
     ''' Main loop for the server '''
+    game = GameWrapper(args.board)
     stop = False
     while not stop:
         post('tick')
