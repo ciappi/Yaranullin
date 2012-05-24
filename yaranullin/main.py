@@ -44,9 +44,9 @@ def main():
 
     # Set logging level
     level = logging.INFO
-    fmt = '%(levelname)s: %(message)s'
+    fmt = '%(levelname)s:%(message)s'
     if args.debug:
-        fmt = '%(levelname)s:%(name)s:%(funcName)s() %(message)s'
+        fmt = '%(levelname)s:%(name)s:%(funcName)s():%(message)s'
         level = logging.DEBUG
     logging.basicConfig(format=fmt, level=level)
     LOGGER.debug('Starting %s...', args.cmd)
