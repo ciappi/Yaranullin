@@ -85,3 +85,44 @@ class GameWrapper(object):
             post('game-event-board-del', name=bname)
 
 
+class DummyGameWrapper(object):
+
+    def __init__(self):
+        self.boards = set()
+        connect('game-state-update', self.update)
+        connect('game-request-board-new', self.create_board)
+        connect('game-request-board-del', self.del_board)
+        connect('game-request-pawn-new', self.create_pawn)
+        connect('game-request-pawn-move', self.move_pawn)
+        connect('game-request-pawn-del', self.del_pawn)
+
+    def update(self, event_dict):
+        self.clear()
+        tmxs = event_dict['tmxs']
+        for tmx in tmxs:
+            try:
+                load_board_from_tmx(tmx, in_place=False)
+            except:
+                LOGGER.exception("Unable to load tmx file '%s'" % tmx)
+
+    def create_board(self, event_dict):
+        self.boards.add(event_dict['name'])
+        post('game-event-board-new', event_dict)
+
+    def del_board(self, event_dict):
+        self.boards.remove(event_dict['name'])
+        post('game-event-board-del', event_dict)
+
+    def create_pawn(self, event_dict):
+        post('game-event-pawn-new', event_dict)
+
+    def move_pawn(self, event_dict):
+        post('game-event-pawn-moved', event_dict)
+
+    def del_pawn(self, event_dict):
+        post('game-event-pawn-del', event_dict)
+
+    def clear(self):
+        for bname in self.boards:
+            self.boards.remove(bname)
+            post('game-event-board-del', name=bname)
