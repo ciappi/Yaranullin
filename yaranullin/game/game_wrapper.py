@@ -20,17 +20,23 @@ LOGGER = logging.getLogger(__name__)
 
 from yaranullin.game.game import Game
 from yaranullin.event_system import post, connect
+from yaranullin.game.load_and_save import load_board_from_tmx
 
 
 class GameWrapper(object):
 
-    def __init__(self):
+    def __init__(self, tmxs):
         self.game = Game()
         connect('game-request-board-new', self.create_board)
         connect('game-request-board-del', self.del_board)
         connect('game-request-pawn-new', self.create_pawn)
         connect('game-request-pawn-move', self.move_pawn)
         connect('game-request-pawn-del', self.del_pawn)
+        for tmx in tmxs:
+            try:
+                load_board_from_tmx(tmx, in_place=False)
+            except:
+                LOGGER.exception("Unable to load tmx file '%s'" % tmx)
 
     def create_board(self, event_dict):
         name = event_dict['name']
