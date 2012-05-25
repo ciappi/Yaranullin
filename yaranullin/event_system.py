@@ -41,6 +41,8 @@ def connect(event, callback):
     if not isinstance(event, basestring):
         raise RuntimeError('event_system.connect(): invalid event type')
     wrapper = WeakCallback(callback)
+    LOGGER.debug("Connecting callback %s with event '%s'", repr(callback),
+        event)
     _EVENTS[event].add(wrapper)
 
 
@@ -49,12 +51,18 @@ def _disconnect(event, callback):
     wrapper = WeakCallback(callback)
     if wrapper in _EVENTS[event]:
         _EVENTS[event].remove(wrapper)
+        LOGGER.debug("Disconnecting callback %s from event '%s'",
+                repr(callback), event)
+    else:
+        LOGGER.debug("Callback %s was not connected to event '%s'",
+                repr(callback), event)
 
 
 def disconnect(event=None, callback=None):
     ''' Disconnect callbacks '''
     if callback is None and event is None:
         # Remove all callbacks
+        LOGGER.debug("Disconnecting all callbacks")
         _EVENTS.clear()
     elif callback is not None and event is not None:
         # Remove at most one callback
@@ -65,6 +73,7 @@ def disconnect(event=None, callback=None):
             _disconnect(event, callback)
     elif event in _EVENTS:
         # Delete all callbacks connected to an event
+        LOGGER.debug("Disconnecting all callbacks from event '%s'", event)
         _EVENTS.remove(event)
 
 
@@ -93,6 +102,8 @@ def post(event, attributes=None, queue=None, **kattributes):
     # Add a special attribute with the type of the event
     event_dict['event'] = event
     queue.append(event_dict) 
+    LOGGER.debug("Appended event ('%s', %s) to the queue", event,
+            repr(event_dict))
     return id_
 
 
@@ -108,6 +119,7 @@ def process_queue(queue=None):
         # Find all handler for this event
         handlers = set(_EVENTS[event])
         handlers |= _EVENTS['any']
+        LOGGER.debug("Calling handlers for event '%s'...", event)
         for handler in handlers:
             if handler() is None:
                 garbage.add(handler)
@@ -117,11 +129,14 @@ def process_queue(queue=None):
             except TypeError:
                 # An handler can have no arguments
                 handler()()
+            LOGGER.debug("Callback '%s' has been called", repr(handler()))
+        LOGGER.debug("Calling handlers for event '%s'... done", event)
         # Garbage collect every dead WeakCallback
         if garbage:
             _EVENTS[event] -= garbage
             # 'garbage.clear()' takes about 80% of the time of 'garbage = set()'
             garbage.clear()
+            LOGGER.debug("Garbage cleared")
         if event == 'quit':
             stop = True 
             break
