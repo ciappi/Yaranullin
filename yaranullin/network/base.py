@@ -39,6 +39,7 @@ class _EndPoint(asyncore.dispatcher):
     """Sends and receives messages across the network."""
 
     def __init__(self,  sock=None, sockets=None):
+        LOGGER.debug("Creating network end point...")
         asyncore.dispatcher.__init__(self, sock, sockets)
         self._in_buffer = collections.deque()
         self._out_buffer = collections.deque()
@@ -51,13 +52,18 @@ class _EndPoint(asyncore.dispatcher):
             self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         else:
             self.set_socket(sock)
+        LOGGER.debug("Creating network end point... done")
 
     def _add_to_out_buffer(self, message):
         self._out_buffer.append(FORMAT.pack(len(message)) + message)
+        LOGGER.debug("Appended message of length %d to the end point out queue",
+                len(message))
 
     def _get_from_in_buffer(self):
         if self._in_buffer:
-            return self._in_buffer.popleft()
+            msg = self._in_buffer.popleft()
+            LOGGER.debug("Popped message of length %d from the end point queue",
+                    len(msg))
 
     def log_info(self, message, type='info'):
         try:
@@ -79,6 +85,7 @@ class _EndPoint(asyncore.dispatcher):
 
     def handle_write(self):
         num_sent = self.send(self._out_buffer[0])
+        LOGGER.debug("Sent %d bytes of %d", num_sent, len(self._out_buffer[0]))
         self._out_buffer[0] = self._out_buffer[0][num_sent:]
         if not self._out_buffer[0]:
             self._out_buffer.popleft()
@@ -93,6 +100,7 @@ class _EndPoint(asyncore.dispatcher):
         data = self.recv(to_read)
         if not data:
             return
+        LOGGER.debug("Got %d bytes of %d", len(data), length)
         self.in_chunks.append(data)
         self.len_in_chunks += len(data)
         if self.len_in_chunks == length:
@@ -107,11 +115,13 @@ class _EndPoint(asyncore.dispatcher):
             if data:
                 (self.lendata, ) = FORMAT.unpack(data)
                 self.state = STATE_BODY
+                LOGGER.debug("Got message length: %d", self.lendata)
         elif self.state == STATE_BODY:
             data = self._recvall(self.lendata)
             if data:
                 self._in_buffer.append(data)
                 self.state = STATE_LEN
+                LOGGER.debug("Got message body")
 
 
 STATE_MESSAGE, STATE_RESOURCE = range(2)
@@ -149,12 +159,15 @@ class EndPoint(_EndPoint):
                 if not self.check_in_event(event_dict):
                     continue
                 if 'resource' in event_dict:
+                    LOGGER.debug("Got event dictionary with binary data mark")
                     self.state_msg = STATE_RESOURCE
                     self.resource_message = event_dict
                 else:
+                    LOGGER.debug("Got event dictionary")
                     event = event_dict['event']
                     post(event, event_dict)
             elif self.state_msg == STATE_RESOURCE:
+                LOGGER.debug("Got binary data")
                 event_dict = self.resource_message
                 self.resource_message = None
                 event_dict['resource'] = bz2.decompress(data)
@@ -172,5 +185,7 @@ class EndPoint(_EndPoint):
             event_dict['resource'] = None
             self._add_to_out_buffer(json.dumps(event_dict))
             self._add_to_out_buffer(bz2.compress(resource))
+            LOGGER.debug("Sent event dictionary along with binary data")
         else:
             self._add_to_out_buffer(json.dumps(event_dict))
+            LOGGER.debug("Sent event dictionary")

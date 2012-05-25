@@ -29,14 +29,12 @@ class Board(object):
     ''' The board where the pawns lie '''
 
     def __init__(self, name, size):
-        LOGGER.debug("Initializing board '%s' with size (%d, %d)...", name,
-                size[0], size[1])
         self.name = name
         self.size = size
         self.initiatives = []
         self.pawns = {}
         self._grid = Grid(size)
-        LOGGER.debug("Initializing board '%s' with size (%d, %d)... done", name,
+        LOGGER.debug("Initialized board '%s' with size (%d, %d)", name,
                 size[0], size[1])
 
     def _place_pawn(self, pawn, pos, size):
@@ -50,7 +48,6 @@ class Board(object):
 
     def create_pawn(self, name, initiative, pos, size):
         ''' Create a new Pawn '''
-        LOGGER.debug("Creating a new pawn...")
         pawn = Pawn(name, initiative, size)
         try:
             self._place_pawn(pawn, pos, size)
@@ -62,12 +59,12 @@ class Board(object):
             self.initiatives.append(pawn)
             self.initiatives.sort(key=lambda pawn: pawn.initiative,
                     reverse=True)
-            LOGGER.debug("Creating a new pawn... done")
+            LOGGER.info("Created a pawn with name '%s' inside board '%s'", name,
+                    self.name)
             return pawn
 
     def del_pawn(self, name):
         ''' Delete the pawn 'name' '''
-        LOGGER.debug("Removing pawn '%s'...", name)
         try:
             pawn = self.pawns.pop(name)
         except KeyError:
@@ -76,7 +73,8 @@ class Board(object):
         else:
             self.initiatives.remove(pawn)
             self._grid.remove(pawn)
-            LOGGER.debug("Removing pawn '%s'... done", name)
+            LOGGER.info("Removed pawn '%s' from board '%s'", name,
+                    self.name)
             return pawn
 
     def move_pawn(self, name, pos, size=None):
@@ -91,9 +89,10 @@ class Board(object):
             LOGGER.warning("Pawn '%s' was not in board '%s'", name,
                 self.name)
         except IndexError:
-            LOGGER.warning("Cannot move pawn '%s' at pos (%d, %d) with "
-                "size (%d, %d)", pawn.name, pos[0], pos[1], size[0], size[1])
+            LOGGER.warning("Cannot move pawn '%s' of size (%d, %d) at "
+                "pos (%d, %d) within board '%s'", name, size[0], size[1],
+                pos[0], pos[1], self.name)
         else:
-            LOGGER.debug("Moving pawn '%s' to (%d, %d)... done", name, pos[0],
-                    pos[1])
+            LOGGER.info("Moved pawn '%s' at pos (%d, %d) within board '%s'",
+                    name, pos[0], pos[1], self.name)
             return pawn

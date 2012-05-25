@@ -37,6 +37,7 @@ class GameWrapper(object):
                 load_board_from_tmx(tmx, in_place=False)
             except:
                 LOGGER.exception("Unable to load tmx file '%s'" % tmx)
+        LOGGER.debug("GameWrapper initialized")
 
     def create_board(self, event_dict):
         name = event_dict['name']
@@ -102,8 +103,9 @@ class DummyGameWrapper(object):
         for tmx in tmxs:
             try:
                 load_board_from_tmx(tmx, in_place=False)
+                LOGGER.info("Loaded board from file '%s'", tmx)
             except:
-                LOGGER.exception("Unable to load tmx file '%s'" % tmx)
+                LOGGER.exception("Unable to load board from file '%s'" % tmx)
 
     def create_board(self, event_dict):
         self.boards.add(event_dict['name'])

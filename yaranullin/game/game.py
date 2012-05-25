@@ -27,12 +27,11 @@ class Game(object):
     ''' Model and state of Yaranullin '''
 
     def __init__(self, *tmxs):
-        LOGGER.debug("Initializing game...")
         self.boards = {}
         for tmx in tmxs:
             LOGGER.info("Loading board from '%s'", tmx)
             self.add_board(load_board_from_tmx(tmx))
-        LOGGER.debug("Initializing game... done")
+        LOGGER.debug("Game initialized")
 
     def create_board(self, name, size):
         ''' Create a new board '''
@@ -42,7 +41,7 @@ class Game(object):
             LOGGER.info("Created board with name '%s' and size (%d, %d)", 
                     name, size[0], size[1])
             return board
-        LOGGER.error("A board '%s' already exists", name)
+        LOGGER.warning("A board '%s' already exists", name)
 
     def add_board(self, board):
         ''' Add a board to the game '''
@@ -50,7 +49,7 @@ class Game(object):
             self.boards[board.name] = board
             LOGGER.info("Added board '%s'", board.name)
             return board
-        LOGGER.error("A board '%s' already exists", board.name)
+        LOGGER.warning("A board '%s' already exists", board.name)
 
     def del_board(self, name):
         ''' Delete the board 'name' '''
@@ -58,7 +57,7 @@ class Game(object):
             board = self.boards.pop(name)
             LOGGER.info("Deleted board '%s'", name)
             return board
-        LOGGER.error("A board '%s' cannot be found", name)
+        LOGGER.warning("A board '%s' cannot be found", name)
 
     def create_pawn(self, bname, pname, initiative, pos, size):
         ''' Add a pawn to a board '''
