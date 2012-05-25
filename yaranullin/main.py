@@ -49,7 +49,6 @@ def main():
         fmt = '%(levelname)s:%(name)s:%(funcName)s():%(message)s'
         level = logging.DEBUG
     logging.basicConfig(format=fmt, level=level)
-    LOGGER.debug('Starting %s...', args.cmd)
 
     # Import the correct runner
     if args.cmd == 'client':
@@ -59,8 +58,10 @@ def main():
 
     # Run
     try:
+        LOGGER.debug('Starting %s...', args.cmd)
         run(args)
+        LOGGER.debug('Quitting %s...', args.cmd)
     except KeyboardInterrupt:
-        pass
+        LOGGER.debug("Got Keyboard Interrupt, quitting...")
     except:
         LOGGER.exception("Unhandled exception")
