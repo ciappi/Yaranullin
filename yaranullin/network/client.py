@@ -46,10 +46,12 @@ class ClientEndPoint(EndPoint):
         connect('game-request-update', self.post)
         connect('resource-request', self.post)
 
-    def join(self, host, port):
+    def join(self, event_dict):
         """Try to join a remote server."""
         # We should reconnect if the connection goes down but
         # prevent a reconnection is connection is ok.
+        host = event_dict['host']
+        port = event_dict['port']
         self.connect((host, port))
         LOGGER.debug('Connecting to %s:%d', host, port)
         post('game-request-update')
