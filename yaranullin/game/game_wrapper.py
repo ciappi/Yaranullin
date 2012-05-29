@@ -20,7 +20,8 @@ LOGGER = logging.getLogger(__name__)
 
 from yaranullin.game.game import Game
 from yaranullin.event_system import post, connect
-from yaranullin.game.load_and_save import load_board_from_tmx
+from yaranullin.game.load_and_save import load_board_from_tmx,\
+        load_board_from_file, get_tmx_board
 
 
 class GameWrapper(object):
@@ -32,12 +33,44 @@ class GameWrapper(object):
         connect('game-request-pawn-new', self.create_pawn)
         connect('game-request-pawn-move', self.move_pawn)
         connect('game-request-pawn-del', self.del_pawn)
-        for tmx in tmxs:
-            try:
-                load_board_from_tmx(tmx, in_place=False)
-            except:
-                LOGGER.exception("Unable to load tmx file '%s'" % tmx)
+        connect('game-request-update', self.request_update)
+        self.load_from_files(tmxs)
         LOGGER.debug("GameWrapper initialized")
+
+    def request_update(self):
+        boards = self._dump_game()
+        post('game-event-update', tmxs=boards)
+
+    def _dump_game(self):
+        boards = {}
+        for name in self.game.boards:
+            board = get_tmx_board(name)
+            if board:
+                boards[name] = board
+            else:
+                LOGGER.error("Unable to dump board '%s' to a string", name)
+        return boards
+
+    def load_from_files(self, files):
+        ''' Load a board and its pawns from a tmx file '''
+        for tmx in files:
+            try:
+                board, pawns = load_board_from_file(tmx, ext=True)
+            except:
+                LOGGER.exception("Unable to load tmx file '%s'", tmx)
+                continue
+            board = self.game.add_board(board)
+            if not board:
+                continue
+            loaded_pawns = set()
+            for pawn in pawns:
+                pawn = self.game.add_pawn(board.name, pawn)
+                if not pawn:
+                    continue
+                loaded_pawns.add(pawn)
+            post('game-event-board-new', board.__dict__)
+            for pawn in loaded_pawns:
+                post('game-event-pawn-new', pawn.__dict__)
 
     def create_board(self, event_dict):
         name = event_dict['name']
@@ -90,7 +123,7 @@ class DummyGameWrapper(object):
 
     def __init__(self):
         self.boards = set()
-        connect('game-state-update', self.update)
+        connect('game-event-update', self.update)
         connect('game-request-board-new', self.create_board)
         connect('game-request-board-del', self.del_board)
         connect('game-request-pawn-new', self.create_pawn)
@@ -100,12 +133,17 @@ class DummyGameWrapper(object):
     def update(self, event_dict):
         self.clear()
         tmxs = event_dict['tmxs']
-        for tmx in tmxs:
+        for name, tmx_map in tmxs.iteritems():
             try:
-                load_board_from_tmx(tmx, in_place=False)
-                LOGGER.info("Loaded board from file '%s'", tmx)
+                board, pawns = load_board_from_tmx(name, tmx_map, ext=True)
+                LOGGER.info("Loaded board '%s' from tmx string", name)
             except:
-                LOGGER.exception("Unable to load board from file '%s'" % tmx)
+                LOGGER.exception("Unable to load board '%s' from tmx string",
+                        name)
+            else:
+                post('game-event-board-new', board.__dict__)
+                for pawn in pawns:
+                    post('game-event-pawn-new', pawn.__dict__)
 
     def create_board(self, event_dict):
         self.boards.add(event_dict['name'])

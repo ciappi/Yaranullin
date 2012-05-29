@@ -53,7 +53,29 @@ class Board(object):
             self._place_pawn(pawn, pos, size)
         except IndexError:
             LOGGER.warning("Cannot create pawn '%s' at pos (%d, %d) with "
-                "size (%d, %d)", pawn.name, pos[0], pos[1], size[0], size[1])
+                "size (%d, %d)", name, pos[0], pos[1], size[0], size[1])
+        else:
+            self.pawns[pawn.name] = pawn
+            self.initiatives.append(pawn)
+            self.initiatives.sort(key=lambda pawn: pawn.initiative,
+                    reverse=True)
+            LOGGER.info("Created a pawn with name '%s' inside board '%s'", name,
+                    self.name)
+            return pawn
+
+    def add_pawn(self, pawn):
+        ''' Create a new Pawn '''
+        if not isinstance(pawn, Pawn):
+            LOGGER.warning("Object '%s' is not a Pawn", repr(pawn))
+            return
+        name = pawn.name
+        pos = pawn.pos
+        size = pawn.size
+        try:
+            self._place_pawn(pawn, pos, size)
+        except IndexError:
+            LOGGER.warning("Cannot create pawn '%s' at pos (%d, %d) with "
+                "size (%d, %d)", name, pos[0], pos[1], size[0], size[1])
         else:
             self.pawns[pawn.name] = pawn
             self.initiatives.append(pawn)

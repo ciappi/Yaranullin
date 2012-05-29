@@ -26,11 +26,8 @@ class Game(object):
 
     ''' Model and state of Yaranullin '''
 
-    def __init__(self, *tmxs):
+    def __init__(self):
         self.boards = {}
-        for tmx in tmxs:
-            LOGGER.info("Loading board from '%s'", tmx)
-            self.add_board(load_board_from_tmx(tmx))
         LOGGER.debug("Game initialized")
 
     def create_board(self, name, size):
@@ -44,12 +41,18 @@ class Game(object):
         LOGGER.warning("A board '%s' already exists", name)
 
     def add_board(self, board):
-        ''' Add a board to the game '''
-        if board.name not in self.boards:
-            self.boards[board.name] = board
-            LOGGER.info("Added board '%s'", board.name)
+        ''' Create a new board '''
+        if not isinstance(board, Board):
+            LOGGER.warning("Object '%s' is not a Board", repr(board))
+            return
+        name = board.name
+        size = board.size
+        if name not in self.boards:
+            self.boards[name] = board
+            LOGGER.info("Added board with name '%s' and size (%d, %d)", 
+                    name, size[0], size[1])
             return board
-        LOGGER.warning("A board '%s' already exists", board.name)
+        LOGGER.warning("A board '%s' already exists", name)
 
     def del_board(self, name):
         ''' Delete the board 'name' '''
@@ -67,6 +70,15 @@ class Game(object):
             LOGGER.warning("Board '%s' not found", bname)
         else:
             return board.create_pawn(pname, initiative, pos, size)
+
+    def add_pawn(self, bname, pawn):
+        ''' Add a pawn to a board '''
+        try:
+            board = self.boards[bname]
+        except KeyError:
+            LOGGER.warning("Board '%s' not found", bname)
+        else:
+            return board.add_pawn(pawn)
 
     def move_pawn(self, bname, pname, pos, size=None):
         ''' Move a pawn '''

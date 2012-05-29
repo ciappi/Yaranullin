@@ -19,46 +19,72 @@ import os
 from xml.etree import ElementTree
 
 from yaranullin.config import YR_SAVE_DIR
+from yaranullin.game.board import Board
+from yaranullin.game.cell_content import Pawn
+
+_MAPS = {}
 
 
 class ParseError(SyntaxError):
     ''' Error parsing tmx file '''
 
 
-def load_board_from_tmx(name, in_place=True):
+def _get_object_layer(tag, layer_name):
+    for objectgroup in tag.findall('objectgroup'):
+        if objectgroup.attrib['name'] == layer_name:
+            return objectgroup
+
+
+def _get_property(tag, name):
+    ''' Get a property from within a tag '''
+    properties = tag.find('properties')
+    if properties is None:
+        raise KeyError("No properties inside tag '%s'" % repr(tag))
+    for prop in properties.findall('property'):
+        if prop.attrib['name'] == name:
+            return prop.attrib['value']
+    raise KeyError("Property '%s' is not available" % name)
+
+
+def _set_property(tag, name, value):
+    ''' Get a property from within a tag '''
+    properties = tag.find('properties')
+    if not properties:
+        properties = ElementTree.Element('properties')
+        tag.append(properties)
+    properties.append(ElementTree.Element('property', name=name, value=value))
+
+
+def load_board_from_file(fname, ext=False):
     ''' Load and return a board from a tmx file '''
-    if in_place:
-        from yaranullin.game.board import Board
-    else:
-        from yaranullin.event_system import post
-    complete_path = os.path.join(YR_SAVE_DIR, name) 
+    complete_path = os.path.join(YR_SAVE_DIR, fname) 
     try:
         with open(complete_path) as tmx_file:
-            tmx_map = ElementTree.fromstring(tmx_file.read())
+            tmx_map = tmx_file.read()
     except IOError:
         raise
+    bname = os.path.splitext(os.path.basename(fname))[0]
+    return load_board_from_tmx(bname, tmx_map, ext)
+
+
+def load_board_from_tmx(bname, tmx_map, ext=False):
+    ''' Load and return a board from a string '''
+    try:
+        tmx_map = ElementTree.fromstring(tmx_map)
     except:
-        raise ParseError("Error parsing '%s'" % complete_path)
+        raise ParseError("Error parsing '%s'" % bname)
     # Save basic board attribute
-    bname = os.path.splitext(os.path.basename(name))[0]
     size = int(tmx_map.attrib['width']), int(tmx_map.attrib['height'])
     tilewidth = int(tmx_map.attrib['tilewidth'])
     if tilewidth != int(tmx_map.attrib['tileheight']):
         raise ParseError("tilewidth != tileheight: tiles must be square")
-    if in_place:
-        # Create a new board
-        board = Board(name, size)
-    else:
-        # Request a new board
-        post('game-request-board-new', name=bname, size=size)
-    # Find pawn object groups
-    pawns = None
-    for objectgroup in tmx_map.findall('objectgroup'):
-        if objectgroup.attrib['name'] in ('Pawns', 'pawns', 'PAWNS'):
-            pawns = objectgroup
-            break
-    if pawns is not None:
-        for pawn in pawns.findall('object'):
+    # Create a new board
+    board = Board(bname, size)
+    # Find pawn object group
+    pawn_layer = _get_object_layer(tmx_map, 'pawns')
+    pawns = set()
+    if pawn_layer is not None:
+        for pawn in pawn_layer.findall('object'):
             name = pawn.attrib['name']
             # Minimum width and height must be 1
             size = (max(int(pawn.attrib['width']) // tilewidth, 1),
@@ -69,19 +95,15 @@ def load_board_from_tmx(name, in_place=True):
                 initiative = int(_get_property(pawn, 'initiative'))
             except KeyError:
                 raise ParseError("Error parsing pawn '%s'" % name)
-            if in_place:
-                board.create_pawn(name, initiative, pos, size)
-            else:
-                post('game-request-pawn-new', bname=bname, pname=name,
-                        initiative=initiative, pos=pos, size=size)
-    if in_place:
-        return board
+            pawn = Pawn(name, initiative, size)
+            pawn.pos = pos
+            pawns.add(pawn)
+    # Now add the board to _MAPS
+    _MAPS[board.name] = tmx_map
+    return board, pawns
 
 
-def _get_property(tag, name):
-    ''' Get a property from within a tag '''
-    properties = tag.find('properties')
-    for prop in properties.findall('property'):
-        if prop.attrib['name'] == name:
-            return prop.attrib['value']
-    raise KeyError("Property '%s' is not available" % name)
+def get_tmx_board(bname, ext=False):
+    ''' Return an tmx version of board '''
+    if bname in _MAPS:
+        return ElementTree.tostring(_MAPS[bname])
