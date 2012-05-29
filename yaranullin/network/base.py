@@ -64,6 +64,7 @@ class _EndPoint(asyncore.dispatcher):
             msg = self._in_buffer.popleft()
             LOGGER.debug("Popped message of length %d from the end point queue",
                     len(msg))
+            return msg
 
     def log_info(self, message, type='info'):
         try:
