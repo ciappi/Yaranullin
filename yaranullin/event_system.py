@@ -22,6 +22,7 @@ This module is a simple implementation of an event pattern.
 
 import collections
 import logging
+import inspect
 
 LOGGER = logging.getLogger(__name__)
 
@@ -102,8 +103,9 @@ def post(event, attributes=None, queue=None, **kattributes):
     # Add a special attribute with the type of the event
     event_dict['event'] = event
     queue.append(event_dict) 
-    LOGGER.debug("Appended event ('%s', %s) to the queue", event,
-            repr(event_dict))
+    if event != 'tick':
+        LOGGER.debug("Appended event '%s' to the queue, with args %s", event,
+                repr(event_dict))
     return id_
 
 
@@ -119,18 +121,31 @@ def process_queue(queue=None):
         # Find all handler for this event
         handlers = set(_EVENTS[event])
         handlers |= _EVENTS['any']
-        LOGGER.debug("Calling handlers for event '%s'...", event)
-        for handler in handlers:
-            if handler() is None:
-                garbage.add(handler)
+        if event != 'tick':
+            LOGGER.debug("Calling handlers for event '%s'...", event)
+        for handler_ in handlers:
+            handler = handler_()
+            if handler is None:
+                garbage.add(handler_)
                 continue
-            try:
-                handler()(event_dict)
-            except TypeError:
-                # An handler can have no arguments
-                handler()()
-            LOGGER.debug("Callback '%s' has been called", repr(handler()))
-        LOGGER.debug("Calling handlers for event '%s'... done", event)
+            if event != 'tick':
+                LOGGER.debug("Calling callback '%s'...", repr(handler))
+            args, _, _, _ = inspect.getargspec(handler)
+            if inspect.ismethod(handler):
+                len_args = len(args) - 1
+            else:
+                len_args = len(args)
+            if len_args == 0:
+                handler()
+            elif len_args == 1:
+                handler(event_dict)
+            else:
+                raise TypeError("Bad number of arguments for callback '%s'" %
+                        repr(handler))
+            if event != 'tick':
+                LOGGER.debug("Calling callback '%s'... done", repr(handler))
+        if event != 'tick':
+            LOGGER.debug("Calling handlers for event '%s'... done", event)
         # Garbage collect every dead WeakCallback
         if garbage:
             _EVENTS[event] -= garbage
