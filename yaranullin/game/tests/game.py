@@ -34,11 +34,6 @@ class TestGame(unittest.TestCase):
         self.assertIn(board.name, self.game.boards)
         self.assertIs(board, self.game.boards[board.name])
 
-    def test_add_board(self):
-        board = self.game.add_board(Board('Creepy Dungeon', (10, 20)))
-        self.assertIn(board.name, self.game.boards)
-        self.assertIs(board, self.game.boards[board.name])
-
     def test_del_board(self):
         board = self.game.create_board('Nasty Dungeon', (1000, 2000))
         self.game.del_board(board.name)
