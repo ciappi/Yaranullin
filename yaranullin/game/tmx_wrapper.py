@@ -75,7 +75,7 @@ class TmxWrapper(object):
             name = pawn.attrib['name']
             if name == pname:
                 pawn.attrib['x'] = pos[0]
-                pawn.attrib['y'] = pos[0]
+                pawn.attrib['y'] = pos[1]
 
     def load_board_from_file(self, fname):
         ''' Load and return a board from a tmx file '''
