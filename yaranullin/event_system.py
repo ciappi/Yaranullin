@@ -94,7 +94,7 @@ def post(event, attributes=None, queue=None, **kattributes):
         try:
             event_dict.update(attributes)
         except TypeError:
-            LOGGER.exception("Cannot update event dictionary with '%s' object",
+            LOGGER.exception("Cannot update event dictionary with object '%s'",
                     str(type(attributes)))
             raise
     # Add the id of the dict to the object
@@ -151,7 +151,7 @@ def process_queue(queue=None):
             _EVENTS[event] -= garbage
             # 'garbage.clear()' takes about 80% of the time of 'garbage = set()'
             garbage.clear()
-            LOGGER.debug("Garbage cleared")
+            LOGGER.debug("Purged dead handlers for event '%s'", event)
         if event == 'quit':
             stop = True 
             break
