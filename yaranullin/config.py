@@ -69,7 +69,7 @@ except IOError as why:
         sys.exit("Unable to find main configuration file")
     raise
 except ConfigParser.Error:
-    sys.exit('Unable to read main configuration file')
+    sys.exit('Unable to parse main configuration file')
 
 
 # User provided config file
