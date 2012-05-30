@@ -78,4 +78,3 @@ class Grid(object):
                 del self._grid[cell]
         del self._contents[cnt]
         cnt.pos = None
-        cnt.size = None
