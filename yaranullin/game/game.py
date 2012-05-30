@@ -19,7 +19,6 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 from yaranullin.game.board import Board
-from yaranullin.game.load_and_save import load_board_from_tmx
 
 
 class Game(object):
@@ -40,20 +39,6 @@ class Game(object):
             return board
         LOGGER.warning("A board '%s' already exists", name)
 
-    def add_board(self, board):
-        ''' Create a new board '''
-        if not isinstance(board, Board):
-            LOGGER.warning("Object '%s' is not a Board", repr(board))
-            return
-        name = board.name
-        size = board.size
-        if name not in self.boards:
-            self.boards[name] = board
-            LOGGER.info("Added board with name '%s' and size (%d, %d)", 
-                    name, size[0], size[1])
-            return board
-        LOGGER.warning("A board '%s' already exists", name)
-
     def del_board(self, name):
         ''' Delete the board 'name' '''
         if name in self.boards:
@@ -70,15 +55,6 @@ class Game(object):
             LOGGER.warning("Board '%s' not found", bname)
         else:
             return board.create_pawn(pname, initiative, pos, size)
-
-    def add_pawn(self, bname, pawn):
-        ''' Add a pawn to a board '''
-        try:
-            board = self.boards[bname]
-        except KeyError:
-            LOGGER.warning("Board '%s' not found", bname)
-        else:
-            return board.add_pawn(pawn)
 
     def move_pawn(self, bname, pname, pos, size=None):
         ''' Move a pawn '''
