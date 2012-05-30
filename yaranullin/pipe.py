@@ -49,7 +49,7 @@ class Pipe(object):
             # Never post ticks between processes.
             return
         if id_ in self.posted_events:
-            # This event was posted by the pipe, so do not have to post it
+            # This event was posted by the pipe, so we must not post it
             # back or we will trigger an infinite loop.
             # Remove the event from the set (the event will be posted here
             # once) and return
@@ -58,7 +58,7 @@ class Pipe(object):
         self.out_queue.put(event_dict)
 
     def tick(self):
-        ''' Get all the event from the in queue '''
+        ''' Get all the events from the in queue '''
         while not self.in_queue.empty():
             event_dict = self.in_queue.get()
             event = event_dict.pop('event')
