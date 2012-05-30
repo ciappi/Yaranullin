@@ -12,7 +12,8 @@ skeletons and other derivatives.
 This is a list of all dependencies.
 
 * python >= 2.7
-* python-pygame >= 1.9.1
+* sfml = 2.0-rc
+* pysfml2-cython = 0.1.1
 
 ## Server
 
