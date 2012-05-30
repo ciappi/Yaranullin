@@ -35,11 +35,8 @@ class ClientEndPoint(EndPoint):
 
     def __init__(self):
         EndPoint.__init__(self)
-        self._connect_handlers()
-
-    def _connect_handlers(self):
-        ''' Connect the events to send to the sever '''
         connect('join', self.join)
+        # Connect the events to send to the sever
         connect('game-request-pawn-move', self.post)
         connect('game-request-pawn-place', self.post)
         connect('game-request-pawn-next', self.post)
@@ -48,8 +45,8 @@ class ClientEndPoint(EndPoint):
 
     def join(self, event_dict):
         """Try to join a remote server."""
-        # We should reconnect if the connection goes down but
-        # prevent a reconnection is connection is ok.
+        # XXX We should reconnect if the connection goes down but
+        # prevent a reconnection if connection is ok.
         host = event_dict['host']
         port = event_dict['port']
         self.connect((host, port))
