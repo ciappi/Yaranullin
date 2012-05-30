@@ -31,9 +31,6 @@ class ServerEndPoint(EndPoint):
 
     def __init__(self, sock):
         EndPoint.__init__(self, sock)
-        self._connect_handlers()
-
-    def _connect_handlers(self):
         connect('game-event-update', self.post)
         connect('game-event-pawn-next', self.post)
         connect('game-event-pawn-updated', self.post)
