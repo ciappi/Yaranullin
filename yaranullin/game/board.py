@@ -68,7 +68,7 @@ class Board(object):
         try:
             pawn = self.pawns.pop(name)
         except KeyError:
-            LOGGER.warning("Pawn '%s' was not in board '%s'", pawn.name,
+            LOGGER.warning("Pawn '%s' was not in board '%s'", name,
                 self.name)
         else:
             self.initiatives.remove(pawn)
