@@ -16,10 +16,13 @@
 
 import asyncore
 
+import sfml
+
 from yaranullin.config import CONFIG
 from yaranullin.event_system import post, process_queue
 from yaranullin.network.client import ClientEndPoint
 from yaranullin.game.game_wrapper import DummyGameWrapper
+
 
 # Initialize network
 ClientEndPoint()
@@ -27,11 +30,19 @@ HOST = CONFIG.get('network', 'host')
 PORT = CONFIG.getint('network', 'port')
 GAME = DummyGameWrapper()
 
+
 def run(args):
     ''' Main loop for the client '''
-    stop = False
+    window = sfml.RenderWindow(sfml.VideoMode(640, 480), 'Yaranullin')
+    window.framerate_limit = 60
+    clock = sfml.Clock()
     post('join', host=HOST, port=PORT)
+    stop = False
     while not stop:
-        post('tick')
+        dt = clock.restart().as_seconds()
+        post('tick', dt=dt, window=window)
+        window.clear()
         stop = process_queue()
-        asyncore.poll(0.01)
+        window.display()
+        asyncore.poll(0.002)
+    window.close()
