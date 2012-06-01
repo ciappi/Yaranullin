@@ -136,22 +136,34 @@ class DummyGameWrapper(object):
 
     def create_board(self, event_dict):
         self.boards.add(event_dict['name'])
+        LOGGER.info("Created board with name '%s' and size (%d, %d)",
+                event_dict['name'], event_dict['size'][0],
+                event_dict['size'][1])
         post('game-event-board-new', event_dict)
 
     def del_board(self, event_dict):
         self.boards.remove(event_dict['name'])
+        LOGGER.info("Deleted board with name '%s'", event_dict['name'])
         post('game-event-board-del', event_dict)
 
     def create_pawn(self, event_dict):
+        LOGGER.info("Created pawn '%s' within board '%s'",
+                event_dict['pname'], event_dict['bname'])
         post('game-event-pawn-new', event_dict)
 
     def move_pawn(self, event_dict):
+        LOGGER.info("Moved pawn '%s' at pos (%d, %d) within board '%s'",
+                event_dict['pname'], event_dict['pos'][0],
+                event_dict['pos'][1], event_dict['bname'])
         post('game-event-pawn-moved', event_dict)
 
     def del_pawn(self, event_dict):
+        LOGGER.info("Removed pawn '%s' from board '%s'", event_dict['pname'],
+                event_dict['bname'])
         post('game-event-pawn-del', event_dict)
 
     def clear(self):
         for bname in self.boards:
             post('game-event-board-del', name=bname)
         self.boards.clear()
+        LOGGER.info("All boards have been deleted")
