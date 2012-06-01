@@ -88,7 +88,7 @@ def post(event, attributes=None, queue=None, events=None, **kattributes):
     ''' Post an event '''
     if queue is None:
         queue = _QUEUE
-    if events in None:
+    if events is None:
         events = _EVENTS
     if not isinstance(event, basestring):
         raise RuntimeError('event_system.post(): invalid event type')
@@ -121,7 +121,7 @@ def process_queue(queue=None, events=None):
     ''' Consume the event queue and call all handlers '''
     if queue is None:
         queue = _QUEUE
-    if events in None:
+    if events is None:
         events = _EVENTS
     stop = False
     garbage = set()
