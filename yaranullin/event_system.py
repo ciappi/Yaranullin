@@ -37,21 +37,25 @@ _QUEUE = collections.deque()
 _EVENTS = collections.defaultdict(set)
 
 
-def connect(event, callback):
+def connect(event, callback, events=None):
     ''' Connect a callback to an event '''
+    if events is None:
+        events = _EVENTS
     if not isinstance(event, basestring):
         raise RuntimeError('event_system.connect(): invalid event type')
     wrapper = WeakCallback(callback)
     LOGGER.debug("Connecting callback %s with event '%s'", repr(callback),
         event)
-    _EVENTS[event].add(wrapper)
+    events[event].add(wrapper)
 
 
-def _disconnect(event, callback):
+def _disconnect(event, callback, events=None):
     ''' Disconnect a callback from an event '''
+    if events in None:
+        events = _EVENTS
     wrapper = WeakCallback(callback)
-    if wrapper in _EVENTS[event]:
-        _EVENTS[event].remove(wrapper)
+    if wrapper in events[event]:
+        events[event].remove(wrapper)
         LOGGER.debug("Disconnecting callback %s from event '%s'",
                 repr(callback), event)
     else:
@@ -59,32 +63,36 @@ def _disconnect(event, callback):
                 repr(callback), event)
 
 
-def disconnect(event=None, callback=None):
+def disconnect(event=None, callback=None, events=None):
     ''' Disconnect callbacks '''
+    if events is None:
+        events = _EVENTS
     if callback is None and event is None:
         # Remove all callbacks
         LOGGER.debug("Disconnecting all callbacks")
-        _EVENTS.clear()
+        events.clear()
     elif callback is not None and event is not None:
         # Remove at most one callback
-        _disconnect(event, callback)
+        _disconnect(event, callback, events)
     elif event is None:
         # Remove a callback from all events
-        for event in _EVENTS:
-            _disconnect(event, callback)
-    elif event in _EVENTS:
+        for event in events:
+            _disconnect(event, callback, events)
+    elif event in events:
         # Delete all callbacks connected to an event
         LOGGER.debug("Disconnecting all callbacks from event '%s'", event)
-        _EVENTS.remove(event)
+        events.remove(event)
 
 
-def post(event, attributes=None, queue=None, **kattributes):
+def post(event, attributes=None, queue=None, events=None, **kattributes):
     ''' Post an event '''
     if queue is None:
         queue = _QUEUE
+    if events in None:
+        events = _EVENTS
     if not isinstance(event, basestring):
         raise RuntimeError('event_system.post(): invalid event type')
-    if not _EVENTS[event] and not _EVENTS['any']:
+    if not events[event] and not events['any']:
         if event != 'tick':
             LOGGER.warning("No callback connected to event '%s': dropping...",
                     event)
@@ -109,18 +117,20 @@ def post(event, attributes=None, queue=None, **kattributes):
     return id_
 
 
-def process_queue(queue=None):
+def process_queue(queue=None, events=None):
     ''' Consume the event queue and call all handlers '''
     if queue is None:
         queue = _QUEUE
+    if events in None:
+        events = _EVENTS
     stop = False
     garbage = set()
     while queue:
         event_dict = queue.popleft()
         event = event_dict['event']
         # Find all handler for this event
-        handlers = set(_EVENTS[event])
-        handlers |= _EVENTS['any']
+        handlers = set(events[event])
+        handlers |= events['any']
         if event != 'tick':
             LOGGER.debug("Calling handlers for event '%s'...", event)
         for handler_ in handlers:
@@ -148,7 +158,7 @@ def process_queue(queue=None):
             LOGGER.debug("Calling handlers for event '%s'... done", event)
         # Garbage collect every dead WeakCallback
         if garbage:
-            _EVENTS[event] -= garbage
+            events[event] -= garbage
             # 'garbage.clear()' takes about 80% of the time of 'garbage = set()'
             garbage.clear()
             LOGGER.debug("Purged dead handlers for event '%s'", event)
