@@ -25,7 +25,7 @@ from yaranullin.game.grid import Grid
 
 
 class Board(object):
-    
+
     ''' The board where the pawns lie '''
 
     def __init__(self, name, size):
@@ -40,8 +40,8 @@ class Board(object):
     def _place_pawn(self, pawn, pos, size):
         ''' Place a pawn on the grid '''
         contents = self._grid.get(pos, size)
-        # Add a pawn only if the cells are empty or taken by this pawn
-        if contents and pawn not in contents:
+        # Add a pawn only if the cells are empty or taken only by this pawn
+        if len(contents) > 1 or pawn not in contents:
             raise IndexError
         self._grid.remove(pawn)
         self._grid.add(pawn, pos, size)
@@ -59,8 +59,8 @@ class Board(object):
             self.initiatives.append(pawn)
             self.initiatives.sort(key=lambda pawn: pawn.initiative,
                     reverse=True)
-            LOGGER.info("Created a pawn with name '%s' inside board '%s'", name,
-                    self.name)
+            LOGGER.info("Created a pawn with name '%s' inside board '%s'",
+                name, self.name)
             return pawn
 
     def del_pawn(self, name):

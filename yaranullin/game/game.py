@@ -34,7 +34,7 @@ class Game(object):
         board = Board(name, size)
         if name not in self.boards:
             self.boards[name] = board
-            LOGGER.info("Created board with name '%s' and size (%d, %d)", 
+            LOGGER.info("Created board with name '%s' and size (%d, %d)",
                     name, size[0], size[1])
             return board
         LOGGER.warning("A board '%s' already exists", name)
@@ -78,4 +78,3 @@ class Game(object):
         ''' Clear all the boards '''
         self.boards.clear()
         LOGGER.info("Deleted all boards from the game")
-

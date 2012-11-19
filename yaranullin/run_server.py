@@ -24,10 +24,12 @@ from yaranullin.game.game_wrapper import GameWrapper
 HOST = ''
 PORT = CONFIG.getint('network', 'port')
 Server((HOST, PORT))
+GAME = GameWrapper()
+
 
 def run(args):
     ''' Main loop for the server '''
-    game = GameWrapper(args.board)
+    GAME.load_from_files(args.board)
     stop = False
     while not stop:
         post('tick')

@@ -22,13 +22,13 @@ from yaranullin.event_system import post, connect
 class Pipe(object):
 
     ''' Used for communication between two processes.
-    
+
     To allow sending and receiving events from two different processes,
     create an instance of Pipe for each one of them. The in_queue of the
     first Pipe must be the out_queue of the second and viceversa.
 
     The default implementation allows all events through the queues.
-    
+
     '''
 
     def __init__(self, in_queue, out_queue):

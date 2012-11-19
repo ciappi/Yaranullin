@@ -29,7 +29,8 @@ __platform__ = platform.system()
 # Check home folder
 if 'HOME' not in os.environ:
     if __platform__ == 'Windows':
-        HOME_DIR = os.path.join(os.environ['HOMEDRIVE'], os.environ['HOMEPATH'])
+        HOME_DIR = os.path.join(os.environ['HOMEDRIVE'],
+            os.environ['HOMEPATH'])
     else:
         sys.exit('Cannot find home folder')
 else:
@@ -55,7 +56,7 @@ MAIN_CONFIG_FILE = os.path.join(sys.prefix, 'share', 'yaranullin',
                                 'yaranullin.ini')
 # If there is no installed config file, we assume to be in the source folder.
 if not os.path.exists(MAIN_CONFIG_FILE):
-    MAIN_CONFIG_FILE = os.path.join(os.path.split(\
+    MAIN_CONFIG_FILE = os.path.join(os.path.split(
                        os.path.dirname(__file__))[0], 'data', 'yaranullin.ini')
 
 # Create a global configuration object and use args to update configuration

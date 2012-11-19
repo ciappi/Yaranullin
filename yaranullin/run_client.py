@@ -36,6 +36,4 @@ def run(args):
     while not stop:
         post('tick')
         stop = process_queue()
-        window.display()
         asyncore.poll(0.002)
-    window.close()

@@ -27,10 +27,10 @@ import weakref
 
 class WeakCallback(object):
 
-    ''' Store a weak reference to a method or function 
-    
+    ''' Store a weak reference to a method or function
+
     For a given callback returns always the same instance of WeakCallback.
-    
+
     '''
 
     _map = weakref.WeakValueDictionary()

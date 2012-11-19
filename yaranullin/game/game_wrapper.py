@@ -25,7 +25,7 @@ from yaranullin.game.tmx_wrapper import TmxWrapper, ParseError
 
 class GameWrapper(object):
 
-    def __init__(self, tmxs):
+    def __init__(self):
         self.game = Game()
         self.tmx_wrapper = TmxWrapper()
         connect('game-request-board-new', self.create_board)
@@ -34,7 +34,6 @@ class GameWrapper(object):
         connect('game-request-pawn-move', self.move_pawn)
         connect('game-request-pawn-del', self.del_pawn)
         connect('game-request-update', self.request_update)
-        self.load_from_files(tmxs)
         LOGGER.debug("GameWrapper initialized")
 
     def request_update(self):

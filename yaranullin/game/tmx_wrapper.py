@@ -79,12 +79,11 @@ class TmxWrapper(object):
 
     def load_board_from_file(self, fname):
         ''' Load and return a board from a tmx file '''
-        complete_path = os.path.join(YR_SAVE_DIR, fname) 
+        complete_path = os.path.join(YR_SAVE_DIR, fname)
         with open(complete_path) as tmx_file:
             tmx_map = tmx_file.read()
         bname = os.path.splitext(os.path.basename(fname))[0]
         self.load_board_from_tmx(bname, tmx_map)
-
 
     def load_board_from_tmx(self, bname, tmx_map):
         ''' Load and return a board from a string '''
@@ -125,9 +124,7 @@ class TmxWrapper(object):
         for event in events:
             post(event[0], event[1])
 
-
     def get_tmx_board(self, bname):
         ''' Return an tmx version of board '''
         if bname in self._maps:
             return ElementTree.tostring(self._maps[bname])
-

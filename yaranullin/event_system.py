@@ -110,7 +110,7 @@ def post(event, attributes=None, queue=None, events=None, **kattributes):
     event_dict['id'] = id_
     # Add a special attribute with the type of the event
     event_dict['event'] = event
-    queue.append(event_dict) 
+    queue.append(event_dict)
     if event != 'tick':
         LOGGER.debug("Appended event '%s' to the queue, with args %s", event,
                 repr(event_dict))
@@ -159,11 +159,11 @@ def process_queue(queue=None, events=None):
         # Garbage collect every dead WeakCallback
         if garbage:
             events[event] -= garbage
-            # 'garbage.clear()' takes about 80% of the time of 'garbage = set()'
+            # 'garbage.clear()' takes about 80% of the time
+            # of 'garbage = set()'
             garbage.clear()
             LOGGER.debug("Purged dead handlers for event '%s'", event)
         if event == 'quit':
-            stop = True 
+            stop = True
             break
     return stop
-
