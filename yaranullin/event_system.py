@@ -94,9 +94,10 @@ def post(event, attributes=None, queue=None, events=None, **kattributes):
         raise RuntimeError('event_system.post(): invalid event type')
     if not events[event] and not events['any']:
         if event != 'tick':
-            LOGGER.warning("No callback connected to event '%s': dropping...",
+            LOGGER.debug("No callback connected to event '%s': dropping...",
                     event)
-        return
+        if event != 'quit':
+            return
     event_dict = dict(kattributes)
     if attributes is not None:
         try:
