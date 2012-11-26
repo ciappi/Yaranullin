@@ -18,38 +18,21 @@
 import pygame
 
 from yaranullin.pygame_.utils import sign, saturation
+from yaranullin.pygame_.widgets import Frame
 
 
-class Container(object):
+class Container(Frame):
 
     """A container for widgets."""
 
     def __init__(self, parent=None, rect=None):
 
+        Frame.__init__(self, parent, rect)
         self.widgets = pygame.sprite.Group()
         self.ordered_widgets = []
-        self.parent = parent
         self.view = (0, 0)
-        if rect is None:
-            self.rect = pygame.rect.Rect(0, 0, 0, 0)
-        else:
-            self.rect = rect
         self.image = pygame.surface.Surface((self.rect.size)).convert()
         self._image = self.image.copy()
-
-    @property
-    def abs_pos(self):
-        x, y = self.rect.topleft
-        if self.parent:
-            rx, ry = self.parent.abs_pos
-            x, y = x + rx, y + ry
-        return x, y
-
-    @property
-    def abs_rect(self):
-        rect = pygame.rect.Rect(self.rect)
-        rect.topleft = self.abs_pos
-        return rect
 
     def append(self, widget):
         self.widgets.add(widget)
