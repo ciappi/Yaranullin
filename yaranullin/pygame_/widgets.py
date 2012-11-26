@@ -20,38 +20,49 @@
 import os
 import pygame
 
+from yaranullin.event_system import connect
 from yaranullin.config import YR_RES_DIR
-from yaranullin.event_system import Listener
 
 
-class Widget(Listener, pygame.sprite.Sprite):
+class Frame(object):
 
-    """The base widgets.
-
-    It is a simple pygame sprite and a listener connected to the event manager.
-
-    """
-
-    def __init__(self, container):
-        pygame.sprite.Sprite.__init__(self)
-        Listener.__init__(self, container)
-        self.rect = pygame.rect.Rect(0, 0, 0, 0)
-
-    @property
-    def image(self):
-        return pygame.surface.Surface((self.rect.size)).convert()
+    def __init__(self, parent=None, rect=None):
+        self.parent = parent
+        if rect is None:
+            self.rect = pygame.rect.Rect(0, 0, 0, 0)
+        else:
+            self.rect = rect
 
     @property
     def abs_pos(self):
-        rx, ry = self.event_manager.abs_pos
         x, y = self.rect.topleft
-        return x + rx, y + ry
+        if self.parent:
+            rx, ry = self.parent.abs_pos
+            x, y = x + rx, y + ry
+        return x, y
 
     @property
     def abs_rect(self):
         rect = pygame.rect.Rect(self.rect)
         rect.topleft = self.abs_pos
         return rect
+
+
+class Widget(Frame, pygame.sprite.Sprite):
+
+    """The base widgets.
+
+    It is a simple pygame sprite.
+
+    """
+
+    def __init__(self, parent):
+        pygame.sprite.Sprite.__init__(self)
+        Frame.__init__(self, parent)
+
+    @property
+    def image(self):
+        return pygame.surface.Surface((self.rect.size)).convert()
 
     def update(self, dt):
         """Update the widget.
@@ -63,17 +74,20 @@ class Widget(Listener, pygame.sprite.Sprite):
         pass
 
 
-class ImageButton(Widget):
+class Button(Widget):
 
-    """A simple image that can be clicked."""
+    """A simple button that can be clicked."""
 
-    def __init__(self, container, image=None):
-        Widget.__init__(self, container)
+    def __init__(self, parent, image=None):
+        Widget.__init__(self, parent)
+        connect('mouse-click-single-left',
+            self.handle_mouse_click_single_left())
 
     def on_mouse_click_single_left(self):
         pass
 
-    def handle_mouse_click_single_left(self, ev_type, pos):
+    def handle_mouse_click_single_left(self, ev_dict):
+        pos = ev_dict['pos']
         if self.abs_rect.collidepoint(pos):
             self.on_mouse_click_single_left()
 
@@ -81,9 +95,9 @@ class ImageButton(Widget):
 class TextLabel(Widget):
     """A text label."""
 
-    def __init__(self, event_manager, text, font_name, font_size=20,
+    def __init__(self, parent, text, font_name, font_size=20,
                  font_color=(255, 0, 0)):
-        Widget.__init__(self, event_manager)
+        Widget.__init__(self, parent)
         self.text = text
         self.font_color = font_color
         self.font_size = font_size
