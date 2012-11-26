@@ -17,19 +17,18 @@
 
 import pygame
 
-from yaranullin.event_system import EventManagerAndListener
-from yaranullin.pygame_.base.utils import sign, saturation
+from yaranullin.pygame_.utils import sign, saturation
 
 
-class Container(EventManagerAndListener):
+class Container(object):
 
     """A container for widgets."""
 
-    def __init__(self, main_window, rect=None):
+    def __init__(self, parent=None, rect=None):
 
-        EventManagerAndListener.__init__(self, main_window)
         self.widgets = pygame.sprite.Group()
         self.ordered_widgets = []
+        self.parent = parent
         self.view = (0, 0)
         if rect is None:
             self.rect = pygame.rect.Rect(0, 0, 0, 0)
@@ -40,9 +39,11 @@ class Container(EventManagerAndListener):
 
     @property
     def abs_pos(self):
-        rx, ry = self.event_manager.abs_pos
         x, y = self.rect.topleft
-        return x + rx, y + ry
+        if self.parent:
+            rx, ry = self.parent.abs_pos
+            x, y = x + rx, y + ry
+        return x, y
 
     @property
     def abs_rect(self):
@@ -79,19 +80,19 @@ class Container(EventManagerAndListener):
         self.widgets.clear(self.image, self._image)
         # Draw all the widgets.
         self.widgets.draw(self.image)
-        # Draw the background image.
+        # Draw on the background image.
         surf.blit(self.image, self.view)
 
-    def handle_tick(self, ev_type, dt):
+    def handle_tick(self, ev_dict):
         """Handle tick event."""
-        self.update(dt)
+        self.update(ev_dict['dt'])
         self.draw()
 
 
 class OrderedContainer(Container):
 
-    def __init__(self, event_manager, rect=None, gap=5):
-        Container.__init__(self, event_manager, rect)
+    def __init__(self, parent=None, rect=None, gap=5):
+        Container.__init__(self, parent, rect)
         self.gap = gap
 
 
@@ -132,7 +133,7 @@ class ScrollableContainer(Container):
 
     def update(self, dt):
         """Animation sample."""
-        if self.dragging == False:
+        if not self.dragging:
             # Constant deceleration.
             d = (-abs(self.deceleration) * sign(self.velocity[0]),
                  -abs(self.deceleration) * sign(self.velocity[1]))
@@ -162,11 +163,14 @@ class ScrollableContainer(Container):
         self.view = int(x), int(y)
         self.position = x, y
 
-    def handle_mouse_drag_left(self, ev_type, rel, pos):
+    def handle_mouse_drag_left(self, ev_dict):
+        pos = ev_dict['pos']
+        rel = ev_dict['rel']
         if self.abs_rect.collidepoint(pos):
             self.dragging = True
             self.view = self.view[0] + rel[0], self.view[1] + rel[1]
 
-    def handle_mouse_drop_left(self, ev_type, pos):
+    def handle_mouse_drop_left(self, ev_dict):
+        pos = ev_dict['pos']
         if self.abs_rect.collidepoint(pos):
             self.dragging = False
