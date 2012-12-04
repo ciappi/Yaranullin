@@ -17,35 +17,29 @@
 
 import pygame
 
-from yaranullin.pygame_.utils import sign, saturation
-from yaranullin.pygame_.widgets import Frame
+from yaranullin.event_system import connect
+from yaranullin.pygame_.utils import saturation
+from yaranullin.pygame_.widgets import Widget
 
 
-class Container(Frame):
+class Container(Widget):
 
     """A container for widgets."""
 
     def __init__(self, parent=None, rect=None):
-
-        Frame.__init__(self, parent, rect)
-        self.widgets = pygame.sprite.Group()
-        self.ordered_widgets = []
-        self.view = (0, 0)
-        self.image = pygame.surface.Surface((self.rect.size)).convert()
-        self._image = self.image.copy()
+        Widget.__init__(self, parent, rect)
+        self.child_widgets = []
 
     def append(self, widget):
-        self.widgets.add(widget)
-        self.ordered_widgets.append(widget)
+        self.child_widgets.append(widget)
         self.update_widgets_position()
 
     def remove(self, widget):
-        self.widgets.remove(widget)
-        self.ordered_widgets.remove(widget)
+        self.child_widgets.remove(widget)
         self.update_widgets_position()
 
     def sort(self, *args, **kargs):
-        self.ordered_widgets.sort(*args, **kargs)
+        self.child_widgets.sort(*args, **kargs)
         self.update_widgets_position()
 
     def update_widgets_position(self):
@@ -53,28 +47,27 @@ class Container(Frame):
 
     def update(self, dt):
         """Updata the frame state."""
-        self.widgets.update(dt)
+        for child in self.child_widgets:
+            child.update(dt)
+        self.update_widgets_position()
 
-    def draw(self):
+    def subsurface(self, surf):
+        if not self.parent:
+            return surf
+        rect = self.abs_rect
+        return surf.subsurface(rect)
+
+    def draw(self, surf):
         """Draw this container and its widgets."""
-        # This is the destination surface on the screen.
-        surf = pygame.display.get_surface().subsurface(self.abs_rect)
-        # Clear the widgets.
-        self.widgets.clear(self.image, self._image)
-        # Draw all the widgets.
-        self.widgets.draw(self.image)
-        # Draw on the background image.
-        surf.blit(self.image, self.view)
-
-    def handle_tick(self, ev_dict):
-        """Handle tick event."""
-        self.update(ev_dict['dt'])
-        self.draw()
+        sub_surf = self.subsurface(surf)
+        sub_surf.blit(self.image, (0, 0))
+        for child in self.child_widgets:
+            child.draw(sub_surf)
 
 
 class OrderedContainer(Container):
 
-    def __init__(self, parent=None, rect=None, gap=5):
+    def __init__(self, parent=None, rect=None, gap=0):
         Container.__init__(self, parent, rect)
         self.gap = gap
 
@@ -82,10 +75,10 @@ class OrderedContainer(Container):
 class VContainer(OrderedContainer):
 
     def update_widgets_position(self):
-        """First widget in self.widgets in the top element."""
+        """First widget in self.child_widgets in the top element."""
         cx = self.rect.centerx
         top = self.rect.top + self.gap
-        for widget in self.ordered_widgets:
+        for widget in self.child_widgets:
             widget.rect.top = top
             widget.rect.centerx = cx
             b = widget.rect.bottom
@@ -95,10 +88,10 @@ class VContainer(OrderedContainer):
 class HContainer(OrderedContainer):
 
     def update_widgets_position(self):
-        """First widget in self.widgets in the left element."""
+        """First widget in self.child_widgets in the left element."""
         cy = self.rect.centery
         left = self.rect.left + self.gap
-        for widget in self.ordered_widgets:
+        for widget in self.child_widgets:
             widget.rect.left = left
             widget.rect.centery = cy
             r = widget.rect.right
@@ -107,53 +100,30 @@ class HContainer(OrderedContainer):
 
 class ScrollableContainer(Container):
 
-    def __init__(self, main_window, rect=None):
-        Container.__init__(self, main_window, rect)
-        self.dragging = False
+    def __init__(self, parent, rect=None):
+        Container.__init__(self, parent, rect)
         self.position = (0, 0)
-        self.velocity = (0, 0)
-        self.deceleration = 2000
+        self.fullsize = self.rect.size
+        connect('mouse-drag-left', self.handle_mouse_drag_left)
 
-    def update(self, dt):
-        """Animation sample."""
-        if not self.dragging:
-            # Constant deceleration.
-            d = (-abs(self.deceleration) * sign(self.velocity[0]),
-                 -abs(self.deceleration) * sign(self.velocity[1]))
-            xp = self.velocity[0] + d[0] * dt
-            yp = self.velocity[1] + d[1] * dt
-            x = self.position[0] + self.velocity[0] * dt
-            y = self.position[1] + self.velocity[1] * dt
-            # Put velocity to zero if necessary.
-            if sign(xp) != sign(self.velocity[0]):
-                xp = 0
-            if sign(yp) != sign(self.velocity[1]):
-                yp = 0
-            self.velocity = xp, yp
-            new_pos = x, y
-        else:
-            new_pos = self.view
-            xp = (new_pos[0] - self.position[0]) / dt
-            yp = (new_pos[1] - self.position[1]) / dt
-            if (xp, yp) != (0, 0):
-                self.velocity = xp, yp
-        # Limit the position.
-        high = (0, 0)
-        low = (min(0, self.rect.width - self.image.get_width()),
-               min(0, self.rect.height - self.image.get_height()))
-        x = saturation(new_pos[0], low=low[0], high=high[0])
-        y = saturation(new_pos[1], low=low[1], high=high[1])
-        self.view = int(x), int(y)
-        self.position = x, y
+    def draw(self, surf):
+        """Draw this container and its widgets."""
+        sub_surf = self.subsurface(surf)
+        temp_surf = pygame.surface.Surface(self.fullsize)
+        for child in self.child_widgets:
+            child.draw(temp_surf)
+        sub_surf.blit(temp_surf, self.position)
 
     def handle_mouse_drag_left(self, ev_dict):
         pos = ev_dict['pos']
         rel = ev_dict['rel']
-        if self.abs_rect.collidepoint(pos):
-            self.dragging = True
-            self.view = self.view[0] + rel[0], self.view[1] + rel[1]
-
-    def handle_mouse_drop_left(self, ev_dict):
-        pos = ev_dict['pos']
-        if self.abs_rect.collidepoint(pos):
-            self.dragging = False
+        if not self.abs_rect.collidepoint(pos):
+            return
+        new_pos = (self.position[0] + rel[0],
+            self.position[1] + rel[1])
+        high = (0, 0)
+        low = (min(0, self.rect.width - self.fullsize[0]),
+               min(0, self.rect.height - self.fullsize[1]))
+        x = saturation(new_pos[0], low=low[0], high=high[0])
+        y = saturation(new_pos[1], low=low[1], high=high[1])
+        self.position = x, y
