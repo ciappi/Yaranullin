@@ -92,12 +92,12 @@ def post(event, attributes=None, queue=None, events=None, **kattributes):
         events = _EVENTS
     if not isinstance(event, basestring):
         raise RuntimeError('event_system.post(): invalid event type')
-    if not events[event] and not events['any']:
-        if event != 'tick':
-            LOGGER.debug("No callback connected to event '%s': dropping...",
-                    event)
-        if event != 'quit':
-            return
+    #if not events[event] and not events['any']:
+        #if event != 'tick':
+            #LOGGER.debug("No callback connected to event '%s': dropping...",
+                    #event)
+        #if event != 'quit':
+            #return
     event_dict = dict(kattributes)
     if attributes is not None:
         try:
