@@ -14,60 +14,56 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import sys
-
 import pygame
 import pygame.locals as PL
 
 from yaranullin.config import CONFIG
-from yaranullin.event_system import Event, Listener
+from yaranullin.event_system import post, connect
 
 
-class PygameKeyboard(Listener):
+class PygameKeyboard(object):
     """Handle Pygame Keyboard events.
 
     Translates a Pygame KEYDOWN event into a Yaranullin 'key-down' event and
     than post it to the event manager.
     """
 
-    def __init__(self, event_manager):
-        Listener.__init__(self, event_manager)
+    def __init__(self):
+        connect('tick', self.handle_tick)
         self.state = 'released'
-        self.event = None
+        self.repeating_event = None
         self.t = 0
         self.delay = 0.5
         self.Dt = self.delay / 20
 
-    def handle_tick(self, ev_type, dt):
-        events = []
+    def handle_tick(self, event_dict):
+        dt = event_dict['dt']
         if self.state == 'pressed':
             self.t += dt
             if self.t >= self.delay:
                 self.state = 'firing'
-                events.append(self.event)
+                post(self.repeating_event[0], self.repeating_event[1])
         elif self.state == 'firing':
             self.t += dt
             if (self.t - self.delay) > self.Dt:
-                events.append(self.event)
+                post(self.repeating_event[0], self.repeating_event[1])
                 self.t = self.delay
         for pygame_event in pygame.event.get([PL.KEYDOWN, PL.KEYUP]):
             if pygame_event.type == PL.KEYDOWN:
-                event = Event('key-down', key=pygame_event.key,
-                              mod=pygame_event.mod,
-                              unicode=pygame_event.unicode)
-                events.append(event)
-                self.event = event
+                ev_name = 'key-down'
+                ev_dict = {'key': pygame_event.key,
+                    'mod': pygame_event.mod, 'unicode': pygame_event.unicode}
+                post(ev_name, ev_dict)
+                self.repeating_event = ev_name, ev_dict
                 self.state = 'pressed'
                 self.t = 0
             else:
-                self.event = None
+                self.repeating_event = None
                 self.state = 'released'
                 self.t = 0
-        if events:
-            self.post(*events)
 
 
-class PygameMouse(Listener):
+class PygameMouse(object):
 
     """Handle Pygame mouse events.
 
@@ -76,13 +72,13 @@ class PygameMouse(Listener):
     automatically handled by pygame.
     """
 
-    def __init__(self, event_manager):
-        Listener.__init__(self, event_manager)
+    def __init__(self):
+        connect('tick', self.handle_tick)
         self.state = 'idle'
         self.timeout = CONFIG.getint('pygame', 'mouse-click-delay') / 1000.0
 
-    def handle_tick(self, ev_type, dt):
-        events = []
+    def handle_tick(self, event_dict):
+        dt = event_dict['dt']
         if self.state == 'pressed':
             self.t += dt
             if self.t > self.timeout:
@@ -92,8 +88,7 @@ class PygameMouse(Listener):
             if self.t > self.timeout:
                 self.state = 'idle'
                 # fire single click
-                events.append(Event('mouse-click-single-left',
-                                    pos=self.pos))
+                post('mouse-click-single-left', pos=self.pos)
         for pygame_event in pygame.event.get([PL.MOUSEMOTION,
                                              PL.MOUSEBUTTONUP,
                                              PL.MOUSEBUTTONDOWN]):
@@ -107,9 +102,8 @@ class PygameMouse(Listener):
                     if pygame_event.buttons == (True, False, False):
                         self.state = 'drag'
                     elif pygame_event.buttons == (False, False, False):
-                        events.append(Event('mouse-motion',
-                                            pos=pygame_event.pos,
-                                            rel=pygame_event.rel))
+                        post('mouse-motion', pos=pygame_event.pos,
+                            rel=pygame_event.rel)
             elif self.state == 'pressed':
                 if pygame_event.type == PL.MOUSEBUTTONUP:
                     if pygame_event.button == 1:
@@ -121,30 +115,25 @@ class PygameMouse(Listener):
                     if pygame_event.button == 1:
                         self.state = 'idle'
                         # fire double click
-                        events.append(Event('mouse-click-double-left',
-                                            pos=pygame_event.pos))
+                        post('mouse-click-double-left', pos=pygame_event.pos)
                 elif pygame_event.type == PL.MOUSEMOTION:
                     self.state = 'idle'
             elif self.state == 'drag':
                 if (pygame_event.type == PL.MOUSEMOTION and
                         pygame_event.buttons == (True, False, False)):
-                    events.append(Event('mouse-drag-left',
-                                        pos=pygame_event.pos,
-                                        rel=pygame_event.rel))
+                    post('mouse-drag-left', pos=pygame_event.pos,
+                        rel=pygame_event.rel)
                 else:
                     self.state = 'idle'  # fire mouse drop event
-                    events.append(Event('mouse-drop-left',
-                                        pos=pygame_event.pos))
-            else:
-                sys.exit('Unknown mouse button state')
-        if events:
-            self.post(*events)
+                    post('mouse-drop-left', pos=pygame_event.pos)
 
 
-class PygameSystem(Listener):
+class PygameSystem(object):
     """Handle pygame QUIT."""
 
-    def handle_tick(self, ev_type, dt):
+    def __init__(self):
+        connect('tick', self.handle_tick)
+
+    def handle_tick(self):
         for pygame_event in pygame.event.get(PL.QUIT):
-            event = Event('quit')
-            self.event_manager.post(event)
+            post('quit')

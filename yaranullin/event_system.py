@@ -14,243 +14,157 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-"""The event system of Yaranullin."""
+'''The event system of Yaranullin.
 
-import sys
+This module is a simple implementation of an event pattern.
+
+'''
+
+import collections
 import logging
+import inspect
 
-from copy import deepcopy
-from random import choice
-from weakref import proxy
-from collections import deque
+LOGGER = logging.getLogger(__name__)
 
-
-LISTENER_IDS_POOL = frozenset(range(2 ** 16))
-
-
-class Event(object):
-
-    """The class used for all events.
-
-    This is used to broadcast messages to all listeners in all threads.
-
-    """
-
-    def __init__(self, ev_type, **kargs):
-
-        self.__dict__.update(**kargs)
-        # Ensure that the event type is corrent event if there is a
-        # type keyword argument in kargs.
-        self.ev_type = ev_type
+#
+# WeakCallback is a singleton with respect to a callback (i.e. there is only
+# one instance for a given callback).
+#
+from yaranullin.weakcallback import WeakCallback
 
 
-class EventManager(object):
+_QUEUE = collections.deque()
+_EVENTS = collections.defaultdict(set)
 
-    """Broadcast events to registered listeners.
 
-    Every listener will choose event types to get at creation time.
+def connect(event, callback, events=None):
+    ''' Connect a callback to an event '''
+    if events is None:
+        events = _EVENTS
+    if not isinstance(event, basestring):
+        raise RuntimeError('event_system.connect(): invalid event type')
+    wrapper = WeakCallback(callback)
+    LOGGER.debug("Connecting callback %s with event '%s'", repr(callback),
+        event)
+    events[event].add(wrapper)
 
-    """
 
-    def __init__(self):
-        # Couple event types to listeners that want them.
-        # {event_type: [listener_1, listener_2, ...], ...}
-        self.events = dict()
-        # Global event queue, thread safe thanks to deque.
-        self.event_queue = deque()
-        # Used ids.
-        self.free_ids = set(LISTENER_IDS_POOL)
+def _disconnect(event, callback, events=None):
+    ''' Disconnect a callback from an event '''
+    if events in None:
+        events = _EVENTS
+    wrapper = WeakCallback(callback)
+    if wrapper in events[event]:
+        events[event].remove(wrapper)
+        LOGGER.debug("Disconnecting callback %s from event '%s'",
+                repr(callback), event)
+    else:
+        LOGGER.debug("Callback %s was not connected to event '%s'",
+                repr(callback), event)
 
-    def get_new_uid(self, uid):
-        if uid in self.free_ids:
-            self.free_ids.remove(uid)
-            return uid
-        if len(self.free_ids):
-            new_uid = choice(list(self.free_ids))
-            self.free_ids.remove(new_uid)
-            return new_uid
-        else:
-            sys.exit('Max number of listeners reached ('
-                     + str(len(LISTENER_IDS_POOL)) + ')')
 
-    def attach_listener(self, listener, *wanted_events):
-        """Register a Listener."""
-        for event in wanted_events:
-            if event in self.events:
-                if listener not in self.events[event]:
-                    self.events[event].append(listener)
-            else:
-                self.events[event] = [listener, ]
-
-    def detach_listener(self, listener):
-        """Unregister a Listener."""
-        for listeners in self.events.values():
-            if listener in listeners:
-                listeners.remove(listener)
-        # Purge events without listeners.
-        events = {}
-        for event, listeners in self.events.items():
-            if len(listeners):
-                events[event] = listeners
-        self.events = events
-
-    def post(self, *events):
-        """Add an event to the event queue."""
+def disconnect(event=None, callback=None, events=None):
+    ''' Disconnect callbacks '''
+    if events is None:
+        events = _EVENTS
+    if callback is None and event is None:
+        # Remove all callbacks
+        LOGGER.debug("Disconnecting all callbacks")
+        events.clear()
+    elif callback is not None and event is not None:
+        # Remove at most one callback
+        _disconnect(event, callback, events)
+    elif event is None:
+        # Remove a callback from all events
         for event in events:
-            self.event_queue.append(event)
-            if event.ev_type == 'tick':
-                # Consume the event queue every tick.
-                self.consume_event_queue()
-            else:
-                # Log the event with INFO priority.
-                logging.info("Event of type '%s' queued.", event.ev_type)
-
-    def consume_event_queue(self):
-        """Consume and clear the event queue."""
-        while len(self.event_queue):
-            event = self.event_queue.popleft()
-            # Continue if there is no registered listeners.
-            if event.ev_type not in self.events:
-                continue
-            # Avoid runtime errors for listeners created during
-            # the following 'for' loop, by copying the list.
-            listeners = tuple(self.events[event.ev_type])
-            for listener in listeners:
-                listener.notify(event)
-
-    def __del__(self):
-        """Ensure a clean exit for all listeners."""
-        self.post(Event('quit'), Event('tick'))
+            _disconnect(event, callback, events)
+    elif event in events:
+        # Delete all callbacks connected to an event
+        LOGGER.debug("Disconnecting all callbacks from event '%s'", event)
+        events.remove(event)
 
 
-class Listener(object):
-    """Listen to events coming from the Event Manager.
-
-    This is just an interface to be subclassed.
-
-    """
-
-    def __init__(self, event_manager):
+def post(event, attributes=None, queue=None, events=None, **kattributes):
+    ''' Post an event '''
+    if queue is None:
+        queue = _QUEUE
+    if events is None:
+        events = _EVENTS
+    if not isinstance(event, basestring):
+        raise RuntimeError('event_system.post(): invalid event type')
+    #if not events[event] and not events['any']:
+        #if event != 'tick':
+            #LOGGER.debug("No callback connected to event '%s': dropping...",
+                    #event)
+        #if event != 'quit':
+            #return
+    event_dict = dict(kattributes)
+    if attributes is not None:
         try:
-            self.event_manager = proxy(event_manager)
+            event_dict.update(attributes)
         except TypeError:
-            # This is already a proxy.
-            self.event_manager = event_manager
-        self._uid = None
-        # Only methods starting with 'handle_' will be taken into account.
-        # For exemple the callback 'handle_sample_event' will be paired
-        # with the event 'sample-event'.
-        prefix = 'handle_'
-        callbacks = [(e[len(prefix):].replace('_', '-'), getattr(self, e))
-                     for e in dir(self) if e.startswith(prefix)]
-        # Generate a dictionary which pair events to their callbacks.
-        self.callbacks_dict = dict(callbacks)
-        # Save wanted events.
-        wanted_events = self.callbacks_dict.keys()
-        self.wanted_events = set(wanted_events)
-        # Attach to event manager.
-        self.attach()
-
-    def __set_uid(self, new_uid):
-        """Get a unique id."""
-        if self._uid is None:
-            self._uid = self.event_manager.get_new_uid(new_uid)
-
-    def __get_uid(self):
-        return self._uid
-
-    uid = property(__get_uid, __set_uid)
-
-    def post(self, *events):
-        """Post events to the parent event manager."""
-        self.event_manager.post(*events)
-
-    def notify(self, event):
-        """Handle events."""
-        kargs = dict(event.__dict__)
-        ev_type = kargs.pop('ev_type')
-        self.callbacks_dict[event.ev_type](ev_type, **kargs)
-
-    def attach(self):
-        """Register to the event manager."""
-        self.event_manager.attach_listener(self, *self.wanted_events)
-
-    def detach(self):
-        """Detach from event manager."""
-        self.event_manager.detach_listener(self)
+            LOGGER.exception("Cannot update event dictionary with object '%s'",
+                    str(type(attributes)))
+            raise
+    # Add the id of the dict to the object
+    id_ = id(event_dict)
+    event_dict['id'] = id_
+    # Add a special attribute with the type of the event
+    event_dict['event'] = event
+    queue.append(event_dict)
+    if event != 'tick':
+        LOGGER.debug("Appended event '%s' to the queue, with args %s", event,
+                repr(event_dict))
+    return id_
 
 
-class EventManagerAndListener(EventManager, Listener):
-
-    """Used as listener and event manager.
-
-    Used to isolate some parts of Yaranullin (i.e. network listeners,
-    pygame listeners...).
-    If independent is True, this class is used to group listeners that goes
-    in another thread.
-    It will register to its parent event manager with its own wanted events as
-    well as listeners'.
-    """
-
-    def __init__(self, event_manager, independent=False):
-        EventManager.__init__(self)
-        Listener.__init__(self, event_manager)
-        self.independent = independent
-
-    def get_new_uid(self, uid):
-        return self.event_manager.get_new_uid(uid)
-
-    def upgrade_wanted_events(self):
-        """Upgrade wanted events avoiding duplicates.
-
-        It is used when other listeners connects to this event manager.
-
-        """
-        self.detach()
-        events = set(self.wanted_events)
-        events |= set(self.events.keys())
-        if self.independent:
-            # We don't want to listen to ticks coming from the parent
-            # event manager.
-            events -= set(('tick',))
-        else:
-            # We want to receive ticks otherwise the event queue will never
-            # be emptied.
-            events |= set(('tick',))
-        self.event_manager.attach_listener(self, *events)
-
-    def attach_listener(self, listener, *wanted_events):
-        EventManager.attach_listener(self, listener, *wanted_events)
-        self.upgrade_wanted_events()
-
-    def detach_listener(self, listener):
-        EventManager.detach_listener(self, listener)
-        self.upgrade_wanted_events()
-
-    def post(self, *events):
-        """Add an event to the event queue."""
-        # Post downstream only ticks.
-        for event in events:
-            if event.ev_type == 'tick':
-                if 'tick' in self.wanted_events:
-                    Listener.notify(self, event)
-                self.event_queue.append(event)
-                self.consume_event_queue()
+def process_queue(queue=None, events=None):
+    ''' Consume the event queue and call all handlers '''
+    if queue is None:
+        queue = _QUEUE
+    if events is None:
+        events = _EVENTS
+    stop = False
+    garbage = set()
+    while queue:
+        event_dict = queue.popleft()
+        event = event_dict['event']
+        # Find all handler for this event
+        handlers = set(events[event])
+        handlers |= events['any']
+        if event != 'tick':
+            LOGGER.debug("Calling handlers for event '%s'...", event)
+        for handler_ in handlers:
+            handler = handler_()
+            if handler is None:
+                garbage.add(handler_)
+                continue
+            if event != 'tick':
+                LOGGER.debug("Calling callback '%s'...", repr(handler))
+            args, _, _, _ = inspect.getargspec(handler)
+            if inspect.ismethod(handler):
+                len_args = len(args) - 1
             else:
-                # Post upstream, up to the main event manager.
-                self.event_manager.post(event)
-
-    def notify(self, event):
-
-        # If this EventManager is independent (means it runs on its own
-        # thread),then copy the event before using it any further.
-        if self.independent:
-            event = deepcopy(event)
-        # Be notified about wanted events like a regular Listener.
-        if event.ev_type in self.wanted_events:
-            Listener.notify(self, event)
-        # Downstream propagation of events.
-        self.event_queue.append(event)
-        if event.ev_type == 'tick':
-            # Consume the event queue every tick.
-            self.consume_event_queue()
+                len_args = len(args)
+            if len_args == 0:
+                handler()
+            elif len_args == 1:
+                handler(event_dict)
+            else:
+                raise TypeError("Bad number of arguments for callback '%s'" %
+                        repr(handler))
+            if event != 'tick':
+                LOGGER.debug("Calling callback '%s'... done", repr(handler))
+        if event != 'tick':
+            LOGGER.debug("Calling handlers for event '%s'... done", event)
+        # Garbage collect every dead WeakCallback
+        if garbage:
+            events[event] -= garbage
+            # 'garbage.clear()' takes about 80% of the time
+            # of 'garbage = set()'
+            garbage.clear()
+            LOGGER.debug("Purged dead handlers for event '%s'", event)
+        if event == 'quit':
+            stop = True
+            break
+    return stop

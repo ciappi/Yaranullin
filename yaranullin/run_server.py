@@ -1,4 +1,4 @@
-# yaranullin/game/tests/main.py
+# yaranullin/run_server.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -14,24 +14,24 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import asyncore
 
-import unittest
+from yaranullin.config import CONFIG
+from yaranullin.event_system import post, process_queue
+from yaranullin.network.server import Server
+from yaranullin.game.game_wrapper import GameWrapper
 
-from ..game import Game
-from ...event_system import EventManager
+HOST = ''
+PORT = CONFIG.getint('network', 'port')
+Server((HOST, PORT))
+GAME = GameWrapper()
 
 
-class TestBase(unittest.TestCase):
-
-    def setUp(self):
-
-        self.event_manager = EventManager()
-        self.game = Game(self.event_manager)
-        self.board_id = self.game.add_board(name='Test board',
-                                            width=100,
-                                            height=80)
-        self.board = self.game.boards[self.board_id]
-
-    def tearDown(self):
-
-        self.game.del_board(self.board_id)
+def run(args):
+    ''' Main loop for the server '''
+    GAME.load_from_files(args.board)
+    stop = False
+    while not stop:
+        post('tick')
+        stop = process_queue()
+        asyncore.poll(0.01)

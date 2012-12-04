@@ -1,4 +1,4 @@
-# yaranullin/editor/__init__.py
+# yaranullin/tests/weakcallback.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -13,3 +13,37 @@
 # WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+import unittest
+import sys
+
+if __name__ == '__main__':
+    sys.path.insert(0, ".")
+
+
+from yaranullin.weakcallback import WeakCallback
+
+
+class Test:
+    def t(self):
+        return 'called'
+
+
+class TestWeakCallback(unittest.TestCase):
+
+    def test(self):
+        test = Test()
+        weak_t = WeakCallback(test.t)
+        self.assertEqual('called', weak_t()())
+        weak_t2 = WeakCallback(test.t)
+        self.assertIs(weak_t, weak_t2)
+        del test
+        self.assertIsNone(weak_t())
+        self.assertRaises(TypeError, WeakCallback, 'not a function or method')
+        del weak_t
+        del weak_t2
+        self.assertEqual(0, len(WeakCallback._map))
+
+
+if __name__ == '__main__':
+    unittest.main()

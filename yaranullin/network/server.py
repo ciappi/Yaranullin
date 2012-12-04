@@ -15,83 +15,53 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-from time import sleep
-from SocketServer import ThreadingTCPServer, BaseRequestHandler
+import socket
+import asyncore
+import logging
 
-from yaranullin.spinner import CPUSpinner
-from yaranullin.network.base import EndPoint, NetworkView, NetworkController,\
-                                    NetworkSpinner
+LOGGER = logging.getLogger(__name__)
 
-
-class ServerNetworkController(NetworkController):
-    pass
+from yaranullin.event_system import connect
+from yaranullin.network.base import EndPoint
 
 
-class ServerNetworkView(NetworkView):
+class ServerEndPoint(EndPoint):
 
-    handle_game_event_update = NetworkView.add_to_out_queue
-    handle_game_event_pawn_next = NetworkView.add_to_out_queue
-    handle_game_event_pawn_updated = NetworkView.add_to_out_queue
-    handle_game_event_board_change = NetworkView.add_to_out_queue
-    handle_resource_update = NetworkView.add_to_out_queue
+    """End point wrapper for the server"""
+
+    def __init__(self, sock):
+        EndPoint.__init__(self, sock)
+        connect('game-event-update', self.post)
+        connect('game-event-pawn-next', self.post)
+        connect('game-event-pawn-updated', self.post)
+        connect('game-event-board-change', self.post)
+        connect('resource-update', self.post)
 
 
-class ServerEndPoint(BaseRequestHandler, EndPoint):
+class Server(asyncore.dispatcher):
 
-    def setup(self):
-        """Setup a server end point for every connected client."""
-        # Create in and out queues.
-        EndPoint.setup(self)
-        self.request.setblocking(False)
-        # Create the view of the connected client.
-        view = ServerNetworkView(self.server.event_manager)
-        view.end_point = self
-        # Create the controller of the connected client.
-        controller = ServerNetworkController(self.server.event_manager)
-        controller.end_point = self
-        # Save a reference to them.
-        self.view = view
-        self.controller = controller
-        self.keep_going = True
+    """Handle server and create end points"""
 
-    def handle(self):
-        """Handle the connection.
+    def __init__(self, server_address):
+        asyncore.dispatcher.__init__(self)
+        # XXX Remember IPv6
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.set_reuse_addr()
+        self.bind(server_address)
+        LOGGER.debug('Server listening on port %d', server_address[1])
+        self.listen(5)
 
-        Simply pull and push data from and to the socket.
-        Exit the loop if EOFError is raised (the client drop the
-        connection) and the get a quit event from Yaranullin.
-
-        """
+    def log_info(self, message, type='info'):
         try:
-            while self.keep_going:
-                self.pull()
-                self.push()
-                sleep(0.01)
-        except EOFError:
+            log = getattr(LOGGER, type)
+        except AttributeError:
             pass
+        else:
+            log(message)
 
-    def handle_quit(self, ev_type):
-
-        self.keep_going = False
-
-
-class ServerNetworkSpinner(NetworkSpinner, ThreadingTCPServer):
-
-    allow_reuse_address = True
-    daemon_threads = True
-
-    def __init__(self, event_manager, server_address):
-        ThreadingTCPServer.__init__(self,
-                                    server_address,
-                                    ServerEndPoint,
-                                    bind_and_activate=True)
-        CPUSpinner.__init__(self, event_manager)
-
-    def run_network(self):
-
-        self.serve_forever()
-
-    def handle_quit(self, ev_type):
-
-        self.keep_going = False
-        self.shutdown()
+    def handle_accept(self):
+        client_info = self.accept()
+        if client_info is None:
+            return
+        LOGGER.debug('Accept connection from %s', client_info[1])
+        ServerEndPoint(sock=client_info[0])

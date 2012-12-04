@@ -17,92 +17,78 @@
 import pygame
 from weakref import WeakValueDictionary
 
-from yaranullin.cache import CacheMixIn
 from yaranullin.config import CONFIG
-from yaranullin.event_system import Event
-from yaranullin.pygame_.base.containers import ScrollableContainer
-from yaranullin.pygame_.pawn import Pawn
+from yaranullin.event_system import connect, post
+from yaranullin.pygame_.widgets import Widget
+from yaranullin.pygame_.containers import ScrollableContainer
+from yaranullin.pygame_.pawn import PawnToken
 
 
-class Board(ScrollableContainer, CacheMixIn):
+class Tile(Widget):
+
+    pass
+
+
+class Board(ScrollableContainer):
 
     """The view of a Board."""
 
-    def __init__(self, event_manager, uid, name, width, height, rect=None,
-                 tiles=None, **kargs):
-        ScrollableContainer.__init__(self, event_manager, rect)
-        CacheMixIn.__init__(self)
-        self.uid = uid
-        self.active_pawn_uid = None
-        self.name = name
-        self.width = width
-        self.height = height
-        self.active = True
+    def __init__(self, parent, ev_dict, rect):
+        ScrollableContainer.__init__(self, parent, rect)
+        self.name = ev_dict['name']
+        self.active_pawn = None
+        self.size = ev_dict['size']
         self.pawns = WeakValueDictionary()
         self.tw = CONFIG.getint('graphics', 'tile-width')
-        surf = pygame.surface.Surface((self.tw * self.width,
-                                       self.tw * self.height)).convert()
-        self.image = surf
-        self._image = self.image.copy()
-        self.tiles = {}
-        self.to_blit = {}
-        for tile in tiles:
-            x, y = tile['x'], tile['y']
-            self.tiles[x, y] = tile['image']
-            self.to_blit[x, y] = True
+        for x in xrange(self.size[0]):
+            for y in xrange(self.size[1]):
+                tile = Tile(self, pygame.rect.Rect(x * self.tw, y * self.tw,
+                    self.tw, self.tw))
+                if (x + y) % 2:
+                    tile.image = 'white'
+                else:
+                    tile.image = 'black'
+                self.append(tile)
+        self.fullsize = self.size[0] * self.tw, self.size[1] * self.tw
+        connect('game-event-pawn-new', self.handle_game_event_pawn_new)
+        connect('game-event-pawn-del', self.handle_game_event_pawn_del)
+        connect('game-event-pawn-next', self.handle_game_event_pawn_next)
+        connect('mouse-click-single-left', self.handle_mouse_click_single_left)
 
-    def draw(self):
-        cells = ((x, y) for (x, y) in self.to_blit if self.to_blit[x, y])
-        dirty = False
-        for x, y in cells:
-            tile = self.tiles[x, y]
-            pos = self.tw * x, self.tw * y
-            texture = self.get_from_cache(tile, pygame.image.load)
-            size = self.tw, self.tw
-            if texture:
-                dirty = True
-                texture = pygame.transform.smoothscale(texture, size)
-                self._image.blit(texture, pos)
-                self.to_blit[x, y] = False
-        if dirty:
-            self.image = self._image.copy()
-        ScrollableContainer.draw(self)
-
-    def handle_game_event_pawn_new(self, ev_type, **kargs):
+    def handle_game_event_pawn_new(self, ev_dict):
         """Handle the creation of a new Pawn view."""
-        if not self.active:
-            return
-        new_pawn = Pawn(self, **kargs)
-        self.pawns[kargs['uid']] = new_pawn
-        self.append(new_pawn)
+        if self.name == ev_dict['bname']:
+            new_pawn = PawnToken(self, ev_dict)
+            self.pawns[ev_dict['pname']] = new_pawn
+            self.append(new_pawn)
+            self.active_pawn = new_pawn.name
 
-    def handle_game_event_pawn_del(self, ev_type, uid):
+    def handle_game_event_pawn_del(self, ev_dict):
         """Handle the deletion of a Pawn."""
-        if not self.active:
-            return
-        self.remove(self.pawns[uid])
+        if self.name == ev_dict['bname']:
+            self.remove(self.pawns[ev_dict['pname']])
 
-    def handle_game_event_board_change(self, ev_type, uid):
-        if self.uid == uid:
-            self.active = True
-        else:
-            self.active = False
+    def handle_game_event_pawn_next(self, ev_dict):
+        if self.name == ev_dict['bname']:
+            self.active_pawn = ev_dict['pname']
 
-    def handle_tick(self, ev_type, dt):
-        """Handle ticks if the board is active."""
-        if self.active:
-            ScrollableContainer.handle_tick(self, ev_type, dt)
+    def handle_mouse_click_single_left(self, ev_dict):
+        pos = ev_dict['pos']
+        if self.abs_rect.collidepoint(pos):
+            self.on_mouse_click_single_left(ev_dict)
 
-    def handle_game_event_pawn_next(self, ev_type, uid):
-        if self.active:
-            self.active_pawn_uid = uid
+    def on_mouse_click_single_left(self, ev_dict):
+        pos = ev_dict['pos']
+        pos = pos[0] - self.abs_rect.left, pos[1] - self.abs_rect.top
+        pos = pos[0] - self.position[0], pos[1] - self.position[1]
+        pos = pos[0] // self.tw, pos[1] // self.tw
+        post('game-request-pawn-move', bname=self.name,
+            pname=self.active_pawn, pos=pos, rotate=False)
 
-    def handle_mouse_click_single_left(self, ev_type, pos):
-        if self.active and self.abs_rect.collidepoint(pos):
-            # Find the hitted cell
-            pos = pos[0] - self.abs_rect.left, pos[1] - self.abs_rect.top
-            pos = pos[0] - self.view[0], pos[1] - self.view[1]
-            x, y = pos[0] // self.tw, pos[1] // self.tw
-            event = Event('game-request-pawn-place',
-                          uid=self.active_pawn_uid, x=x, y=y, rotate=False)
-            self.post(event)
+    def on_mouse_click_single_right(self, ev_dict):
+        pos = ev_dict['pos']
+        pos = pos[0] - self.abs_rect.left, pos[1] - self.abs_rect.top
+        pos = pos[0] - self.position[0], pos[1] - self.position[1]
+        pos = pos[0] // self.tw, pos[1] // self.tw
+        post('game-request-pawn-move', bname=self.name,
+            pname=self.active_pawn, pos=pos, rotate=True)

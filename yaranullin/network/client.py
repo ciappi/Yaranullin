@@ -14,78 +14,41 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+""" Network client """
 
-import socket
-from time import sleep
+import logging
 
-from yaranullin.event_system import Event
-from yaranullin.network.base import EndPoint, NetworkView, NetworkController,\
-                                    NetworkSpinner
+LOGGER = logging.getLogger(__name__)
 
-
-class ClientNetworkController(NetworkController):
-    pass
+from yaranullin.event_system import connect, post
+from yaranullin.network.base import EndPoint
 
 
-class ClientNetworkView(NetworkView):
+class ClientEndPoint(EndPoint):
 
-    """Basic NetworkView for a client.
+    """End point wrapper for a client.
 
     The client can only move pawns and request the next pawn according to
     initiative order.
 
     """
 
-    handle_game_request_pawn_move = NetworkView.add_to_out_queue
-    handle_game_request_pawn_place = NetworkView.add_to_out_queue
-    handle_game_request_pawn_next = NetworkView.add_to_out_queue
-    handle_game_request_update = NetworkView.add_to_out_queue
-    handle_resource_request = NetworkView.add_to_out_queue
+    def __init__(self):
+        EndPoint.__init__(self)
+        connect('join', self.join)
+        # Connect the events to send to the sever
+        connect('game-request-pawn-move', self.post)
+        connect('game-request-pawn-place', self.post)
+        connect('game-request-pawn-next', self.post)
+        connect('game-request-update', self.post)
+        connect('resource-request', self.post)
 
-
-class ClientEndPoint(EndPoint):
-
-    def __init__(self, event_manager, host, port):
-        self.request = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.request.connect((host, port))
-        self.request.setblocking(False)
-        self.setup(event_manager)
-
-    def setup(self, event_manager):
-        """Setup the client end point."""
-        # Create the queues.
-        EndPoint.setup(self)
-        # Create the view for the network.
-        view = ClientNetworkView(event_manager)
-        view.end_point = self
-        # Create the controller for the network.
-        controller = ClientNetworkController(event_manager)
-        controller.end_point = self
-        # Save a reference for both of them.
-        self.view = view
-        self.controller = controller
-
-
-class ClientNetworkSpinner(NetworkSpinner):
-
-    def __init__(self, event_manager):
-        NetworkSpinner.__init__(self, event_manager)
-        self.end_point = None
-
-    def handle_join(self, ev_type, host, port):
+    def join(self, event_dict):
         """Try to join a remote server."""
-        self.end_point = ClientEndPoint(self.event_manager, host, port)
-        event = Event('game-request-update')
-        self.post(event)
-
-    def run_network(self):
-        """Network loop.
-
-        Simply pull and push from the socket.
-
-        """
-        while self.keep_going:
-            if self.end_point is not None:
-                self.end_point.pull()
-                self.end_point.push()
-            sleep(0.01)
+        # XXX We should reconnect if the connection goes down but
+        # prevent a reconnection if connection is ok.
+        host = event_dict['host']
+        port = event_dict['port']
+        self.connect((host, port))
+        LOGGER.debug('Connecting to %s:%d', host, port)
+        post('game-request-update')

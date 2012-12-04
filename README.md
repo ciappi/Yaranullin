@@ -12,8 +12,8 @@ skeletons and other derivatives.
 This is a list of all dependencies.
 
 * python >= 2.7
-* python-pygame >= 1.9.1
-* python-bson (included in the sources)
+* sfml = 2.0-rc
+* pysfml2-cython = 0.1.1
 
 ## Server
 
@@ -37,16 +37,6 @@ $ ./bin/yrn client --host 127.0.0.1
 
 You can change the host if the server is on another machine on the network.
 
-## Editor
-
-This is a simple textual editor to create or modify a game.
-
-```bash
-$ cd /path/to/yaranullin/sources
-$ ./bin/yrn editor --game test
-```
-
-At the editor prompt you can type 'help' to get help.
 
 ## Images
 

@@ -1,4 +1,6 @@
-# yaranullin/pygame_/base/__init__.py
+#!/usr/bin/env python
+#
+# bin/yrn
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -13,3 +15,15 @@
 # WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+import sys
+import os
+
+if __name__ == '__main__':
+    sys.path.insert(0, os.path.dirname(os.path.dirname(
+                    os.path.abspath(__file__))))
+
+from yaranullin.main import main
+
+if __name__ == '__main__':
+    main()

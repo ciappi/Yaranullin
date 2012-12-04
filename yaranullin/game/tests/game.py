@@ -1,4 +1,4 @@
-# yaranullin/game/cell_content.py
+# yaranullin/game/tests/game.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -14,21 +14,31 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import unittest
+import sys
 
-class _CellContent(object):
+if __name__ == '__main__':
+    sys.path.insert(0, ".")
 
-    ''' Generic content of a board's cell '''
-
-    def __init__(self, size):
-        self.pos = None
-        self.size = size
+from yaranullin.game.game import Game
+from yaranullin.game.board import Board
 
 
-class Pawn(_CellContent):
+class TestGame(unittest.TestCase):
 
-    '''A PG, PNG or a monster '''
+    def setUp(self):
+        self.game = Game()
 
-    def __init__(self, name, initiative, size):
-        _CellContent.__init__(self, size)
-        self.name = name
-        self.initiative = initiative
+    def test_create_board(self):
+        board = self.game.create_board('Nasty Dungeon', (1000, 2000))
+        self.assertIn(board.name, self.game.boards)
+        self.assertIs(board, self.game.boards[board.name])
+
+    def test_del_board(self):
+        board = self.game.create_board('Nasty Dungeon', (1000, 2000))
+        self.game.del_board(board.name)
+        self.assertNotIn(board.name, self.game.boards)
+
+
+if __name__ == '__main__':
+    unittest.main()

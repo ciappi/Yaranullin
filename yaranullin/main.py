@@ -14,124 +14,54 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import argparse
+import logging
 
-import sys
-import threading
+LOGGER = logging.getLogger(__name__)
 
-from yaranullin.config import CONFIG
-from yaranullin.event_system import EventManager, Event
-from yaranullin.cache import Cache
-from yaranullin.game.game import Game
-from yaranullin.game.state import ServerState, ClientState
-from yaranullin.pygame_.gui import SimpleGUI
-from yaranullin.pygame_.base.spinner import PygameCPUSpinner
-from yaranullin.network.server import ServerNetworkSpinner
-from yaranullin.network.client import ClientNetworkSpinner
-from yaranullin.spinner import CPUSpinner
-from yaranullin.editor.view import PygcursesGUI
+from yaranullin.config import __version__, __platform__
 
 
-class ServerRunner(object):
+def main():
+    # Parse input arguments.
+    parser = argparse.ArgumentParser(description='Launches Yaranullin')
+    parser.add_argument('--debug', action='store_true',
+                        help='Print debugging information')
+    parser.add_argument('--version', action='version',
+                        version='Yaranullin ' + __version__ + ' on ' +
+                        __platform__)
+    subparsers = parser.add_subparsers(dest='cmd', help='commands')
+    client_parser = subparsers.add_parser('client', help='Launch the client')
+    client_parser.add_argument('--host', action='store', type=str,
+                        help='Specify the address of the server')
+    client_parser.add_argument('--port', action='store', type=int,
+                        help='Specify the port of the server')
+    server_parser = subparsers.add_parser('server', help='Launch the server')
+    server_parser.add_argument('--board', '-b', action='append', default=[],
+                        help='Specify a board to load. More value can be '
+                        'provided to load multiple boards')
+    args = parser.parse_args()
 
-    """Yaranullin Server.
+    # Set logging level
+    level = logging.INFO
+    fmt = '%(levelname)s:%(message)s'
+    if args.debug:
+        fmt = '%(levelname)s:%(name)s:%(funcName)s():%(message)s'
+        level = logging.DEBUG
+    logging.basicConfig(format=fmt, level=level)
 
-    setup a game model
-    setup a server network spinner
-    setup a file controller
-    load a game if a file name is provided as a command line argument.
+    # Import the correct runner
+    if args.cmd == 'client':
+        from yaranullin.run_client import run
+    elif args.cmd == 'server':
+        from yaranullin.run_server import run
 
-    """
-
-    def __init__(self, args):
-        self.main_event_manager = EventManager()
-        if args.port:
-            port = args.port
-        else:
-            port = CONFIG.getint('network', 'port')
-        self.main_cpu_spinner = ServerNetworkSpinner(self.main_event_manager,
-                                                     ('', port))
-        self.game = Game(self.main_event_manager)
-        self.state = ServerState(self.game)
-        if args.game:
-            event = Event('game-load', dname=args.game)
-            self.main_event_manager.post(event)
-
-    def run(self):
-        self.main_cpu_spinner.run()
-
-
-class ClientRunner(object):
-
-    """Yaranullin Client.
-
-    setup a client network spinner
-    setup pygame controllers and views
-    post a join event
-
-    """
-
-    def __init__(self, args):
-        self.main_event_manager = EventManager()
-        self.main_cpu_spinner = ClientNetworkSpinner(self.main_event_manager)
-        self.mirror_state = ClientState(self.main_event_manager)
-        self.cache = Cache(self.main_event_manager)
-        self.pygame_gui = SimpleGUI(self.main_event_manager)
-        self.pygame_spinner = PygameCPUSpinner(self.pygame_gui)
-        self.pygame_thread = threading.Thread(target=self.pygame_spinner.run)
-        if args.port:
-            port = args.port
-        else:
-            port = CONFIG.getint('network', 'port')
-        if args.host:
-            host = args.host
-        else:
-            host = CONFIG.get('network', 'host')
-        self.main_event_manager.post(Event('join', host=host, port=port))
-
-    def run(self):
-        self.pygame_thread.start()
-        self.main_cpu_spinner.run()
-        self.pygame_thread.join()
-
-
-class EditorRunner(object):
-
-    def __init__(self, args):
-        self.main_event_manager = EventManager()
-        self.main_cpu_spinner = CPUSpinner(self.main_event_manager)
-        self.game = Game(self.main_event_manager)
-        self.state = ServerState(self.game)
-        if args.game:
-            event = Event('game-load', dname=args.game)
-            self.main_event_manager.post(event)
-        self.pygame_gui = PygcursesGUI(self.main_event_manager)
-        self.pygame_spinner = PygameCPUSpinner(self.pygame_gui)
-        self.pygame_thread = threading.Thread(target=self.pygame_spinner.run)
-
-    def run(self):
-        self.pygame_thread.start()
-        self.main_cpu_spinner.run()
-        self.pygame_thread.join()
-
-
-def main(args):
-
-    runner = None
-    mode = args.mode
-    if mode == 'server':
-        print 'Launching a server...'
-        runner = ServerRunner(args)
-    elif mode == 'client':
-        print 'Launching a client...'
-        runner = ClientRunner(args)
-    elif mode == 'editor':
-        print 'Launching the editor...'
-        runner = EditorRunner(args)
-    if runner:
-        if args.debug:
-            runner.run()
-        else:
-            try:
-                runner.run()
-            except:
-                sys.exit('Unexpected error.')
+    # Run
+    try:
+        LOGGER.debug('Starting %s...', args.cmd)
+        run(args)
+        LOGGER.debug('Quitting %s...', args.cmd)
+    except KeyboardInterrupt:
+        LOGGER.debug("Got Keyboard Interrupt, quitting...")
+    except:
+        LOGGER.exception("Unhandled exception")

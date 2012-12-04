@@ -4,6 +4,7 @@
 *.tar
 *.gz
 *.log
+*.nja
 dist/
 build/
 virtualenv/

@@ -14,101 +14,85 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from yaranullin.event_system import EventManagerAndListener, Event
+''' Board object '''
+
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
+from yaranullin.game.cell_content import Pawn
 from yaranullin.game.grid import Grid
-from yaranullin.game.pawn import Pawn
-from yaranullin.game.cell_content import CellContentInitializationError
 
 
-class Board(EventManagerAndListener):
+class Board(object):
 
-    """Board class, holds pawns and the grid."""
+    ''' The board where the pawns lie '''
 
-    def __init__(self, game, name, width, height, uid=None, **kargs):
-        EventManagerAndListener.__init__(self, game)
-        self.grid = Grid(width, height)
-        self.uid = uid
-        self.board_id = self.uid
-        self.pawns = {}
-        self.initiatives = []
-        self.active = True
-        self.active_pawn = None
+    def __init__(self, name, size):
         self.name = name
+        self.size = size
+        self.initiatives = []
+        self.pawns = {}
+        self._grid = Grid(size)
+        LOGGER.debug("Initialized board '%s' with size (%d, %d)", name,
+                size[0], size[1])
 
-    def add_pawn(self, **kargs):
-        """Create and add a Pawn to the Board."""
+    def _place_pawn(self, pawn, pos, size):
+        ''' Place a pawn on the grid '''
+        contents = self._grid.get(pos, size)
+        # Add a pawn only if the cells are empty or taken only by this pawn
+        if len(contents) > 1 or pawn not in contents:
+            raise IndexError
+        self._grid.remove(pawn)
+        self._grid.add(pawn, pos, size)
+
+    def create_pawn(self, name, initiative, pos, size):
+        ''' Create a new Pawn '''
+        pawn = Pawn(name, initiative, size)
         try:
-            new_pawn = Pawn(self, **kargs)
-        except CellContentInitializationError:
-            new_pawn_id = None
+            self._place_pawn(pawn, pos, size)
+        except IndexError:
+            LOGGER.warning("Cannot create pawn '%s' at pos (%d, %d) with "
+                "size (%d, %d)", name, pos[0], pos[1], size[0], size[1])
         else:
-            new_pawn_id = new_pawn.uid
-            self.pawns[new_pawn_id] = new_pawn
-            self.initiatives.append(new_pawn)
-            # Sort the initiatives list.
+            self.pawns[pawn.name] = pawn
+            self.initiatives.append(pawn)
             self.initiatives.sort(key=lambda pawn: pawn.initiative,
-                                  reverse=True)
-        return new_pawn_id
+                    reverse=True)
+            LOGGER.info("Created a pawn with name '%s' inside board '%s'",
+                name, self.name)
+            return pawn
 
-    def del_pawn(self, pawn_id):
-        """Delete all references to a Pawn."""
-        pawn_to_del = self.pawns.pop(pawn_id, None)
-        if pawn_to_del is not None:
-            self.grid.del_content(pawn_to_del)
-            self.initiatives.remove(pawn_to_del)
-        return pawn_to_del
-
-    def next_pawn(self, pawn_id):
-        """Set active_pawn to the next pawn according to initiative order."""
-        if pawn_id is not None:
-            if pawn_id in self.pawns:
-                self.active_pawn = self.pawns[pawn_id]
-        elif len(self.initiatives):
-            if self.active_pawn is None:
-                self.active_pawn = self.initiatives[0]
-            else:
-                try:
-                    index = self.initiatives.index(self.active_pawn) + 1
-                    self.active_pawn = self.initiatives[index]
-                except IndexError:
-                    self.active_pawn = self.initiatives[0]
+    def del_pawn(self, name):
+        ''' Delete the pawn 'name' '''
+        try:
+            pawn = self.pawns.pop(name)
+        except KeyError:
+            LOGGER.warning("Pawn '%s' was not in board '%s'", name,
+                self.name)
         else:
-            self.active_pawn = None
-        return self.active_pawn
+            self.initiatives.remove(pawn)
+            self._grid.remove(pawn)
+            LOGGER.info("Removed pawn '%s' from board '%s'", name,
+                    self.name)
+            return pawn
 
-    def handle_game_request_board_change(self, ev_type, uid):
-        """Activate or deativate this Board."""
-        if uid == self.uid:
-            self.active = True
-            event = Event('game-event-board-change', uid=uid)
-            self.post(event)
+    def move_pawn(self, name, pos, size=None):
+        ''' Move the pawn 'name' to pos'''
+        LOGGER.debug("Moving pawn '%s' to (%d, %d)...", name, pos[0], pos[1])
+        try:
+            pawn = self.pawns[name]
+            if size is None:
+                size = pawn.size
+            self._place_pawn(pawn, pos, size)
+        except KeyError:
+            LOGGER.warning("Pawn '%s' was not in board '%s'", name,
+                self.name)
+        except IndexError:
+            LOGGER.warning("Cannot move pawn '%s' of size (%d, %d) at "
+                "pos (%d, %d) within board '%s'", name, size[0], size[1],
+                pos[0], pos[1], self.name)
         else:
-            self.active = False
-
-    def handle_game_request_pawn_new(self, ev_type, **kargs):
-        """Handle the creation of a new Pawn."""
-        if not self.active:
-            return
-        new_pawn_id = self.add_pawn(**kargs)
-        if new_pawn_id:
-            kargs['uid'] = new_pawn_id
-            event = Event('game-event-pawn-new', **kargs)
-            self.post(event)
-
-    def handle_game_request_pawn_del(self, ev_type, uid):
-        """Handle the deletion of a Pawn."""
-        if not self.active:
-            return
-        pawn_to_del = self.del_pawn(uid)
-        if pawn_to_del is not None:
-            self.grid.del_content(pawn_to_del)
-            event = Event('game-event-pawn-del', uid=uid)
-            self.post(event)
-
-    def handle_game_request_pawn_next(self, ev_type, uid=None):
-        """Handle the request to change initiative."""
-        if not self.active:
-            return
-        pawn = self.next_pawn(uid)
-        event = Event('game-event-pawn-next', uid=pawn.uid)
-        self.post(event)
+            LOGGER.info("Moved pawn '%s' at pos (%d, %d) within board '%s'",
+                    name, pos[0], pos[1], self.name)
+            return pawn

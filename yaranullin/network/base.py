@@ -14,140 +14,179 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+"""Base network classes."""
 
+import asyncore
 import struct
 import socket
-import threading
+import json
+import collections
+import bz2
 import logging
-import bson
-from collections import deque
 
-#from utils import encode, decode
-from yaranullin.event_system import Listener, Event
-from yaranullin.spinner import CPUSpinner
+LOGGER = logging.getLogger(__name__)
+
+from yaranullin.event_system import post, connect
 
 
-format = struct.Struct('!I')  # for messages up to 2**32 - 1 in length
+FORMAT = struct.Struct('!I')  # for messages up to 2**32 - 1 in length
+
+STATE_LEN, STATE_BODY = range(2)
 
 
-class EndPoint(object):
+class _EndPoint(asyncore.dispatcher):
 
     """Sends and receives messages across the network."""
 
-    def setup(self):
-        """Initialization stuff."""
-        self.in_buffer = deque()
-        self.out_buffer = deque()
+    def __init__(self,  sock=None, sockets=None):
+        LOGGER.debug("Creating network end point...")
+        asyncore.dispatcher.__init__(self, sock, sockets)
+        self._in_buffer = collections.deque()
+        self._out_buffer = collections.deque()
+        self.in_chunks = collections.deque()
+        self.len_in_chunks = 0
+        self.state = STATE_LEN
+        self.lendata = 0
+        # XXX remember IPv6...
+        if not sock:
+            self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        else:
+            self.set_socket(sock)
+        LOGGER.debug("Creating network end point... done")
 
-    def recvall(self, length):
-        """Read a message from the socket."""
-        data = ''
-        while len(data) < length:
-            more = self.request.recv(length - len(data))
-            if not more:
-                raise EOFError('socket closed %d bytes into a %d-byte message'
-                               % (len(data), length))
-            data += more
-        return data
+    def _add_to_out_buffer(self, message):
+        self._out_buffer.append(FORMAT.pack(len(message)) + message)
+        LOGGER.debug("Appended message of length %d to the end point out queue",
+                len(message))
 
-    def pull(self):
-        """Pull all data available from the socket."""
+    def _get_from_in_buffer(self):
+        if self._in_buffer:
+            msg = self._in_buffer.popleft()
+            LOGGER.debug("Popped message of length %d from the end point queue",
+                    len(msg))
+            return msg
+
+    def log_info(self, message, type='info'):
         try:
-            while True:
-                data = self.get()
-                logging.debug('Pulling ' + repr(data) + ' from server.')
-                self.in_buffer.append(data)
-        except socket.error:
+            log = getattr(LOGGER, type)
+        except AttributeError:
             pass
+        else:
+            log(message)
 
-    def push(self):
-        """Push all the data queue to the socket."""
-        while len(self.out_buffer):
-            data = self.out_buffer.popleft()
-            logging.debug('Pushing ' + repr(data) + ' to server.')
-            self.put(data)
+    def handle_connect(self):
+        LOGGER.debug('Connection established')
 
-    def get(self):
-        """Get a single message from the socket.
+    def handle_close(self):
+        self.close()
+        LOGGER.debug('Connection closed')
 
-        Returns the decompressed data.
-        """
-        lendata = self.recvall(format.size)
-        (length,) = format.unpack(lendata)
-        data = self.recvall(length)
-        return data
+    def writable(self):
+        return self._out_buffer
 
-    def put(self, message):
-        """Send a single message to the socket."""
-        self.request.sendall(format.pack(len(message)) + message)
+    def handle_write(self):
+        num_sent = self.send(self._out_buffer[0])
+        LOGGER.debug("Sent %d bytes of %d", num_sent, len(self._out_buffer[0]))
+        self._out_buffer[0] = self._out_buffer[0][num_sent:]
+        if not self._out_buffer[0]:
+            self._out_buffer.popleft()
+
+    def _recvall(self, length):
+        """ Receives a whole message """
+        # Read at most 262144 bytes. Trying to read all (length -len(data))
+        # has been reported to be an issue on Vista 32 bit because
+        # this number has to be converted to a C long and sometimes it is
+        # too big for that.
+        to_read = min(length - self.len_in_chunks, 262144)
+        data = self.recv(to_read)
+        if not data:
+            return
+        LOGGER.debug("Got %d bytes of %d", len(data), length)
+        self.in_chunks.append(data)
+        self.len_in_chunks += len(data)
+        if self.len_in_chunks == length:
+            data = ''.join(self.in_chunks)
+            self.len_in_chunks = 0
+            self.in_chunks.clear()
+            return data
+
+    def handle_read(self):
+        if self.state == STATE_LEN:
+            data = self._recvall(FORMAT.size)
+            if data:
+                (self.lendata, ) = FORMAT.unpack(data)
+                self.state = STATE_BODY
+                LOGGER.debug("Got message length: %d", self.lendata)
+        elif self.state == STATE_BODY:
+            data = self._recvall(self.lendata)
+            if data:
+                self._in_buffer.append(data)
+                self.state = STATE_LEN
+                LOGGER.debug("Got message body")
 
 
-class NetworkView(Listener):
-
-    """The view of the network."""
-
-    def __init__(self, event_manager):
-        Listener.__init__(self, event_manager)
-        self.end_point = None
-
-    def add_to_out_queue(self, ev_type, **kargs):
-        """Add an event to the queue of the end_point."""
-        if self.end_point is not None:
-            #data = dumps(event, default=encode)
-            data = {'ev_type': ev_type}
-            data.update(kargs)
-            self.end_point.out_buffer.append(bson.dumps(data))
+STATE_MESSAGE, STATE_RESOURCE = range(2)
 
 
-class NetworkController(Listener):
+class EndPoint(_EndPoint):
 
-    """Process events from the network."""
+    """Interface _EndPoint with Yaranullin's event system"""
 
-    def __init__(self, event_manager):
-        Listener.__init__(self, event_manager)
-        self.end_point = None
+    def __init__(self, sock=None, sockets=None):
+        _EndPoint.__init__(self, sock, sockets)
+        connect('tick', self.process_queue)
+        self.state_msg = STATE_MESSAGE
+        self.resource_message = None
 
-    def handle_tick(self, ev_type):
-        """Handle ticks."""
-        self.consume_in_queue()
-
-    def consume_in_queue(self):
-        """Process the event queue.
-
-        We trust we don't get stuck in this loop because the
-        network is much slower to fill the queue than we are able to
-        empty it.
-
-        """
-        if self.end_point is not None:
-            while len(self.end_point.in_buffer):
-                data = self.end_point.in_buffer.popleft()
-                #event = loads(data, object_hook=decode)
-                event = Event(**bson.loads(data))
-                if self.check_event(event):
-                    self.post(event)
-
-    def check_event(self, event):
+    def check_in_event(self, event_dict):
         """Check if an event can be posted on the local event manager."""
         return True
 
+    def check_out_event(self, event_dict):
+        """Check if an event can be sent over the network."""
+        return True
 
-class NetworkSpinner(CPUSpinner):
+    def process_queue(self):
+        """Process the event queue."""
+        # We trust we don't get stuck in this loop because the
+        # network is much slower to fill the queue than we are able to
+        # empty it.
+        while True:
+            data = _EndPoint._get_from_in_buffer(self)
+            if not data:
+                break
+            if self.state_msg == STATE_MESSAGE:
+                event_dict = json.loads(data)
+                if not self.check_in_event(event_dict):
+                    continue
+                if 'resource' in event_dict:
+                    LOGGER.debug("Got event dictionary with binary data mark")
+                    self.state_msg = STATE_RESOURCE
+                    self.resource_message = event_dict
+                else:
+                    LOGGER.debug("Got event dictionary")
+                    event = event_dict['event']
+                    post(event, event_dict)
+            elif self.state_msg == STATE_RESOURCE:
+                LOGGER.debug("Got binary data")
+                event_dict = self.resource_message
+                self.resource_message = None
+                event_dict['resource'] = bz2.decompress(data)
+                self.state_msg = STATE_MESSAGE
+                event = event_dict['event']
+                post(event, event_dict)
 
-    """Spinner for the network thread."""
-
-    def run(self):
-        """Main loop.
-
-        Starts the regular CPUSpinner loop to process Yaranullin events as
-        well as a loop regulary sending and receiving data from the network.
-
-        """
-        net_loop_thread = threading.Thread(target=self.run_network)
-        net_loop_thread.start()
-        CPUSpinner.run(self)
-        net_loop_thread.join()
-
-    def run_network(self):
-
-        pass
+    def post(self, event_dict):
+        """Add an event to the queue of the end_point."""
+        event_dict = dict(event_dict)
+        if not self.check_out_event(event_dict):
+            return
+        if 'resource' in event_dict:
+            resource = event_dict.pop('resource')
+            event_dict['resource'] = None
+            self._add_to_out_buffer(json.dumps(event_dict))
+            self._add_to_out_buffer(bz2.compress(resource))
+            LOGGER.debug("Sent event dictionary along with binary data")
+        else:
+            self._add_to_out_buffer(json.dumps(event_dict))
+            LOGGER.debug("Sent event dictionary")
