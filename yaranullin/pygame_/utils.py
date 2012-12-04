@@ -14,7 +14,16 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import os
 import pygame
+import pygame.locals as pl
+
+from yaranullin.config import YR_FONT_DIR
+from yaranullin.config import YR_CACHE_DIR
+from yaranullin.cache import cache
+
+
+THECOLORS = pl.color.THECOLORS
 
 
 def sign(x):
@@ -35,18 +44,42 @@ def saturation(x, low=None, high=None):
         return x
 
 
-def load_image(f, size, alpha=False):
-    surf = pygame.image.load(f)
-    surf_size = surf.get_size()
-    ratio = size[0] / float(surf_size[0]), size[1] / float(surf_size[1])
-    if ratio[0] <= ratio[1]:
-        ratio = ratio[0]
+@cache
+def load_image(img_name, size, alpha=False, rotated=False):
+    '''Load and resize an image using the cache'''
+    if img_name in THECOLORS:
+        surf = pygame.surface.Surface(size)
+        surf.fill(THECOLORS[img_name])
     else:
-        ratio = ratio[1]
-    size = int(surf_size[0] * ratio), int(surf_size[0] * ratio)
-    surf = pygame.transform.smoothscale(surf, size)
+        img_name = os.path.join(YR_CACHE_DIR, img_name)
+        surf = pygame.image.load(img_name)
+        surf_size = surf.get_size()
+        ratio = size[0] / float(surf_size[0]), size[1] / float(surf_size[1])
+        if ratio[0] <= ratio[1]:
+            ratio = ratio[0]
+        else:
+            ratio = ratio[1]
+        size = int(surf_size[0] * ratio), int(surf_size[0] * ratio)
+        surf = pygame.transform.smoothscale(surf, size)
     if alpha:
         surf = surf.convert_alpha()
     else:
         surf = surf.convert()
+    if rotated:
+        surf = pygame.transform.rotate(surf, -90)
+    return surf
+
+
+@cache
+def render_text(text, font_name, font_size, font_color, underline, italic):
+    font_color = THECOLORS[font_color]
+    try:
+        font_name = os.path.join(YR_FONT_DIR, font_name)
+        font = pygame.font.Font(font_name, font_size)
+    except:
+        default = pygame.font.get_default_font()
+        font = pygame.font.SysFont(default, font_size)
+    font.set_underline(underline)
+    font.set_italic(italic)
+    surf = font.render(text, True, font_color)
     return surf
