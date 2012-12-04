@@ -17,15 +17,15 @@
 import pygame
 import pygame.locals as PL
 
-from yaranullin.event_system import Event
+from yaranullin.event_system import connect, post
+from yaranullin.pygame_.containers import Container
 from yaranullin.pygame_.board import Board
 from yaranullin.pygame_.hud import HUD
-from yaranullin.pygame_.base.event_manager import PygameGUI
 
 
-class SimpleGUI(PygameGUI):
+class PygameGui(Container):
 
-    """Create a simple gui.
+    """Assemble a simple gui.
 
     The elements on the gui are:
       * a HUD with pawn's names of the left;
@@ -33,31 +33,46 @@ class SimpleGUI(PygameGUI):
 
     """
 
-    def __init__(self, event_manager):
-        PygameGUI.__init__(self, event_manager)
-        self.set_display_mode()
-        self.boards = {}
-        self.huds = {}
+    def __init__(self):
         w, h = pygame.display.get_surface().get_size()
         # The dimensions of the elements are fixed.
-        self.frame_rect = pygame.rect.Rect(201, 0, w - 201, h)
+        self.board_rect = pygame.rect.Rect(201, 0, w - 201, h)
         self.hud_rect = pygame.rect.Rect(0, 0, 200, h)
+        Container.__init__(self, None, pygame.rect.Rect(0, 0, w, h))
+        self.boards = {}
+        self.huds = {}
+        connect('game-event-board-new', self.handle_game_event_board_new)
+        connect('game-event-board-del', self.handle_game_event_board_del)
+        connect('key-down', self.handle_key_down)
+        connect('tick', self.handle_tick)
 
-    def handle_game_event_board_new(self, ev_type, **kargs):
+    def handle_game_event_board_new(self, ev_dict):
         """Create a new board."""
-        new_board_id = kargs['uid']
-        self.boards[new_board_id] = Board(self, rect=self.frame_rect, **kargs)
-        self.huds[new_board_id] = HUD(self, new_board_id, self.hud_rect)
+        board_name = ev_dict['name']
+        new_board = Board(self, ev_dict, rect=self.board_rect)
+        new_hud = HUD(self, ev_dict, rect=self.hud_rect)
+        self.child_widgets = []
+        self.append(new_board)
+        self.append(new_hud)
+        self.boards[board_name] = new_board
+        self.huds[board_name] = new_hud
 
-    def handle_game_event_board_del(self, ev_type, uid):
+    def handle_game_event_board_del(self, ev_dict):
         """Delete a board."""
-        self.boards[uid].pawns.clear()
-        del self.boards[uid]
-        self.huds[uid].clear()
-        del self.huds[uid]
+        board_name = ev_dict['name']
+        self.boards[board_name].pawns.clear()
+        del self.boards[board_name]
+        self.huds[board_name].pawns.clear()
+        del self.huds[board_name]
 
-    def handle_key_down(self, ev_type, key, mod, unicode):
+    def handle_key_down(self, ev_dict):
+        key = ev_dict['key']
         if key == PL.K_SPACE:
-            self.post(Event('game-request-pawn-next'))
+            post('game-request-pawn-next')
         elif key == PL.K_ESCAPE:
-            self.post(Event('quit'))
+            post('quit')
+
+    def handle_tick(self, ev_dict):
+        """Handle tick event."""
+        self.update(ev_dict['dt'])
+        self.draw(pygame.display.get_surface())
