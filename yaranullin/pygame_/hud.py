@@ -14,39 +14,31 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import pygame
-
-from yaranullin.config import COLORS
-
-from yaranullin.pygame_.base.widgets import TextLabel
-from yaranullin.pygame_.base.containers import VContainer
+from yaranullin.event_system import connect
+from yaranullin.pygame_.widgets import TextLabel
+from yaranullin.pygame_.containers import VContainer
 
 
 class PawnToken(TextLabel):
 
     """A simple text label with the name of a pawn."""
 
-    def __init__(self, event_manager, uid, name, initiative, color=None,
-                 **kargs):
-        if color is None:
-            n_colors = len(COLORS)
-            color_index = len(event_manager.pawns) % n_colors
-            color = COLORS[color_index]
-            color = pygame.colordict.THECOLORS[color]
-        TextLabel.__init__(self, event_manager, text=name, font_color=color,
-                           font_size=20, font_name='hud_font.ttf')
-        self.pawn_uid = uid
-        self.name = name
-        self.initiative = initiative
+    def __init__(self, ev_dict):
+        self.name = ev_dict['pname']
+        self.board = ev_dict['bname']
+        self.initiative = ev_dict['initiative']
+        TextLabel.__init__(self, text=self.name, font_name='hud_font.ttf',
+            font_size=25)
+        connect('game-event-pawn-next', self.handle_game_event_pawn_next)
 
-    def handle_game_event_pawn_next(self, ev_type, uid):
-        if self.pawn_uid == uid:
-            self.font.set_underline(True)
-            self.font.set_italic(True)
-        else:
-            self.font.set_underline(False)
-            self.font.set_italic(False)
-        self.render_text()
+    def handle_game_event_pawn_next(self, ev_dict):
+        if self.board == ev_dict['bname']:
+            if self.name == ev_dict['pname']:
+                self.underline = True
+                self.italic = True
+            else:
+                self.underline = False
+                self.italic = False
 
 
 class HUD(VContainer):
@@ -57,16 +49,17 @@ class HUD(VContainer):
 
     """
 
-    def __init__(self, event_manager, uid, rect):
-        VContainer.__init__(self, event_manager, rect)
-        self.board_uid = uid
-        self.active = True
+    def __init__(self, parent, ev_dict, rect):
+        VContainer.__init__(self, parent, rect)
+        self.board_name = ev_dict['name']
         self.pawns = {}
+        connect('game-event-pawn-new', self.handle_game_event_pawn_new)
+        connect('game-event-pawn-del', self.handle_game_event_pawn_del)
 
-    def handle_game_event_pawn_new(self, ev_type, **kargs):
+    def handle_game_event_pawn_new(self, ev_dict):
         """Handle a new pawn."""
-        new_pawn_token = PawnToken(self, **kargs)
-        self.pawns[kargs['uid']] = new_pawn_token
+        new_pawn_token = PawnToken(ev_dict)
+        self.pawns[ev_dict['pname']] = new_pawn_token
         self.append(new_pawn_token)
         self.sort(key=lambda pawn: pawn.initiative, reverse=True)
 
@@ -74,14 +67,3 @@ class HUD(VContainer):
         """Handle pawn deletion."""
         pawn_to_del = self.pawns.pop(uid)
         self.remove(pawn_to_del)
-
-    def handle_game_event_board_change(self, ev_type, uid):
-        if self.board_uid == uid:
-            self.active = True
-        else:
-            self.active = False
-
-    def handle_tick(self, ev_type, dt):
-        """Handle ticks if the board is active."""
-        if self.active:
-            VContainer.handle_tick(self, ev_type, dt)
