@@ -14,14 +14,13 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-"""Base network classes."""
+'''Base network classes.'''
 
 import asyncore
 import struct
 import socket
 import json
 import collections
-import bz2
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ STATE_LEN, STATE_BODY = range(2)
 
 class _EndPoint(asyncore.dispatcher):
 
-    """Sends and receives messages across the network."""
+    '''Sends and receives messages across the network.'''
 
     def __init__(self, sock=None, sockets=None):
         LOGGER.debug("Creating network end point...")
@@ -56,14 +55,14 @@ class _EndPoint(asyncore.dispatcher):
 
     def _add_to_out_buffer(self, message):
         self._out_buffer.append(FORMAT.pack(len(message)) + message)
-        LOGGER.debug("Appended message of length %d to the end point out queue",
-                len(message))
+        LOGGER.debug("Appended message of length %d to the end " +
+                "point out queue", len(message))
 
     def _get_from_in_buffer(self):
         if self._in_buffer:
             msg = self._in_buffer.popleft()
-            LOGGER.debug("Popped message of length %d from the end point queue",
-                    len(msg))
+            LOGGER.debug("Popped message of length %d from the end " +
+                "point queue", len(msg))
             return msg
 
     def log_info(self, message, type='info'):
@@ -92,7 +91,7 @@ class _EndPoint(asyncore.dispatcher):
             self._out_buffer.popleft()
 
     def _recvall(self, length):
-        """ Receives a whole message """
+        ''' Receives a whole message '''
         # Read at most 262144 bytes. Trying to read all (length -len(data))
         # has been reported to be an issue on Vista 32 bit because
         # this number has to be converted to a C long and sometimes it is
@@ -125,29 +124,24 @@ class _EndPoint(asyncore.dispatcher):
                 LOGGER.debug("Got message body")
 
 
-STATE_MESSAGE, STATE_RESOURCE = range(2)
-
-
 class EndPoint(_EndPoint):
 
-    """Interface _EndPoint with Yaranullin's event system"""
+    '''Interface _EndPoint with Yaranullin's event system'''
 
     def __init__(self, sock=None, sockets=None):
         _EndPoint.__init__(self, sock, sockets)
         connect('tick', self.process_queue)
-        self.state_msg = STATE_MESSAGE
-        self.resource_message = None
 
     def check_in_event(self, event_dict):
-        """Check if an event can be posted on the local event manager."""
+        '''Check if an event can be posted on the local event manager.'''
         return True
 
     def check_out_event(self, event_dict):
-        """Check if an event can be sent over the network."""
+        '''Check if an event can be sent over the network.'''
         return True
 
     def process_queue(self):
-        """Process the event queue."""
+        '''Process the event queue.'''
         # We trust we don't get stuck in this loop because the
         # network is much slower to fill the queue than we are able to
         # empty it.
@@ -155,42 +149,20 @@ class EndPoint(_EndPoint):
             data = _EndPoint._get_from_in_buffer(self)
             if not data:
                 break
-            if self.state_msg == STATE_MESSAGE:
-                event_dict = json.loads(data)
-                if not self.check_in_event(event_dict):
-                    continue
-                if 'resource' in event_dict:
-                    LOGGER.debug("Got event dictionary with binary data mark")
-                    self.state_msg = STATE_RESOURCE
-                    self.resource_message = event_dict
-                else:
-                    LOGGER.debug("Got event dictionary")
-                    event = event_dict['event']
-                    post(event, event_dict)
-            elif self.state_msg == STATE_RESOURCE:
-                LOGGER.debug("Got binary data")
-                event_dict = self.resource_message
-                self.resource_message = None
-                event_dict['resource'] = bz2.decompress(data)
-                self.state_msg = STATE_MESSAGE
-                event = event_dict['event']
-                post(event, event_dict)
+            event_dict = json.loads(data)
+            if not self.check_in_event(event_dict):
+                return
+            LOGGER.debug("Got event dictionary")
+            event = event_dict['event']
+            post(event, event_dict)
 
     def post(self, event_dict):
-        """Add an event to the queue of the end_point."""
+        '''Add an event to the queue of the end_point.'''
         event_dict = dict(event_dict)
         if not self.check_out_event(event_dict):
             return
-        if 'resource' in event_dict:
-            resource = event_dict.pop('resource')
-            event_dict['resource'] = None
-            self._add_to_out_buffer(json.dumps(event_dict))
-            self._add_to_out_buffer(bz2.compress(resource))
-            LOGGER.debug("Sent event dictionary along with binary data")
-        else:
-            self._add_to_out_buffer(json.dumps(event_dict))
-            LOGGER.debug("Sent event dictionary")
+        self._add_to_out_buffer(json.dumps(event_dict))
+        LOGGER.debug("Sent event dictionary")
 
 
-def poll():
-    asyncore.poll()
+poll = asyncore.poll
