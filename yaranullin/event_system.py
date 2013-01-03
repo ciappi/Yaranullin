@@ -168,3 +168,11 @@ def process_queue(queue=None, events=None):
             stop = True
             break
     return stop
+
+
+def step():
+    post('tick')
+    stop = process_queue()
+    if stop:
+        # Tell Kivy to unschedule step()
+        return False
