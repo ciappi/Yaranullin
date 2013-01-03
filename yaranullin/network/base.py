@@ -38,7 +38,7 @@ class _EndPoint(asyncore.dispatcher):
 
     """Sends and receives messages across the network."""
 
-    def __init__(self,  sock=None, sockets=None):
+    def __init__(self, sock=None, sockets=None):
         LOGGER.debug("Creating network end point...")
         asyncore.dispatcher.__init__(self, sock, sockets)
         self._in_buffer = collections.deque()
@@ -190,3 +190,7 @@ class EndPoint(_EndPoint):
         else:
             self._add_to_out_buffer(json.dumps(event_dict))
             LOGGER.debug("Sent event dictionary")
+
+
+def poll():
+    asyncore.poll()
