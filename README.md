@@ -12,6 +12,7 @@ skeletons and other derivatives.
 This is a list of all dependencies.
 
 * python >= 2.7
+* twisted >= 11.1
 
 ## Server
 
