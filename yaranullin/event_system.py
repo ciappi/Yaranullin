@@ -31,6 +31,7 @@ LOGGER = logging.getLogger(__name__)
 # one instance for a given callback).
 #
 from yaranullin.weakcallback import WeakCallback
+from yaranullin.events import EVENTS
 
 
 _QUEUE = collections.deque()
@@ -41,7 +42,7 @@ def connect(event, callback, events=None):
     ''' Connect a callback to an event '''
     if events is None:
         events = _EVENTS
-    if not isinstance(event, basestring):
+    if event not in EVENTS:
         raise RuntimeError('event_system.connect(): invalid event type')
     wrapper = WeakCallback(callback)
     LOGGER.debug("Connecting callback %s with event '%s'", repr(callback),
@@ -90,7 +91,7 @@ def post(event, attributes=None, queue=None, events=None, **kattributes):
         queue = _QUEUE
     if events is None:
         events = _EVENTS
-    if not isinstance(event, basestring):
+    if event not in EVENTS:
         raise RuntimeError('event_system.post(): invalid event type')
     #if not events[event] and not events['any']:
         #if event != 'tick':
