@@ -14,16 +14,12 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import asyncore
-
 from yaranullin.config import CONFIG
 from yaranullin.event_system import post, process_queue
-from yaranullin.network.server import Server
 from yaranullin.game.game_wrapper import GameWrapper
 
 HOST = ''
 PORT = CONFIG.getint('network', 'port')
-Server((HOST, PORT))
 GAME = GameWrapper()
 
 
@@ -34,4 +30,3 @@ def run(args):
     while not stop:
         post('tick')
         stop = process_queue()
-        asyncore.poll(0.01)
