@@ -16,13 +16,11 @@
 
 from yaranullin.config import CONFIG
 from yaranullin.event_system import post, process_queue
-from yaranullin.game.game_wrapper import DummyGameWrapper
 
 
 # Initialize network
 HOST = CONFIG.get('network', 'host')
 PORT = CONFIG.getint('network', 'port')
-GAME = DummyGameWrapper()
 
 
 def run(args):
