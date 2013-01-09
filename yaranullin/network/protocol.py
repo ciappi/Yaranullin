@@ -27,10 +27,10 @@ from yaranullin.event_system import post, connect
 class YaranullinProtocol(Int16StringReceiver):
 
     def connectionMade(self):
-        try:
-            self.factory.endpoint = self
-        except AttributeError:
-            self.factory.endpoints.add(self)
+        self.factory.add(self)
+
+    def connectionLost(self, reason):
+        self.factory.remove(self)
 
     def stringReceived(self, string):
         '''Got an event message.'''
@@ -45,11 +45,18 @@ class YaranullinClientFactory(protocol.ClientFactory):
 
     def __init__(self):
         connect('tick', self.process_queue)
-        connect('game-request-pawn-move', self.post)
-        connect('game-request-pawn-place', self.post)
-        connect('game-request-pawn-next', self.post)
-        connect('game-request-update', self.post)
-        connect('resource-request', self.post)
+        connect('game-request-pawn-move', self.send)
+        connect('game-request-pawn-place', self.send)
+        connect('game-request-pawn-next', self.send)
+        connect('game-request-update', self.send)
+        connect('resource-request', self.send)
+
+    def add(self, prot):
+        self.endpoint = prot
+
+    def remove(self, prot):
+        if prot is self.endpoint:
+            self.endpoint = None
 
     def process_queue(self):
         '''Process the event queue from Yaranullin's event system.'''
@@ -64,7 +71,7 @@ class YaranullinClientFactory(protocol.ClientFactory):
         self._from_yrn.append(json.dumps(event_dict))
 
 
-class YaranullinServerFactory(protocol.ClientFactory):
+class YaranullinServerFactory(protocol.ServerFactory):
 
     protocol = YaranullinProtocol
     endpoints = set()
@@ -72,11 +79,18 @@ class YaranullinServerFactory(protocol.ClientFactory):
 
     def __init__(self):
         connect('tick', self.process_queue)
-        connect('game-event-update', self.post)
-        connect('game-event-pawn-next', self.post)
-        connect('game-event-pawn-updated', self.post)
-        connect('game-event-board-change', self.post)
-        connect('resource-update', self.post)
+        connect('game-event-update', self.send)
+        connect('game-event-pawn-next', self.send)
+        connect('game-event-pawn-updated', self.send)
+        connect('game-event-board-change', self.send)
+        connect('resource-update', self.send)
+
+    def add(self, prot):
+        self.endpoints.add(prot)
+
+    def remove(self, prot):
+        if prot in self.endpoints:
+            self.endpoints.remove(prot)
 
     def process_queue(self):
         '''Process the event queue from Yaranullin's event system.'''
