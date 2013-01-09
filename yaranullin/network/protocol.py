@@ -30,7 +30,7 @@ class YaranullinProtocol(Int16StringReceiver):
         try:
             self.factory.endpoint = self
         except AttributeError:
-            self.factory.endpoints.append(self)
+            self.factory.endpoints.add(self)
 
     def stringReceived(self, string):
         '''Got an event message.'''
