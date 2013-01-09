@@ -19,6 +19,15 @@
 import weakref
 
 
+class CellContent(object):
+
+    ''' Generic content of a Grid's cell '''
+
+    def __init__(self, size):
+        self.pos = None
+        self.size = size
+
+
 class Grid(object):
 
     ''' Indexed rectangular area '''

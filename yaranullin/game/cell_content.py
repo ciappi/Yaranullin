@@ -14,21 +14,14 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-
-class _CellContent(object):
-
-    ''' Generic content of a board's cell '''
-
-    def __init__(self, size):
-        self.pos = None
-        self.size = size
+from yaranullin.game.grid import CellContent
 
 
-class Pawn(_CellContent):
+class Pawn(CellContent):
 
     '''A PG, PNG or a monster '''
 
     def __init__(self, name, initiative, size):
-        _CellContent.__init__(self, size)
+        CellContent.__init__(self, size)
         self.name = name
         self.initiative = initiative
