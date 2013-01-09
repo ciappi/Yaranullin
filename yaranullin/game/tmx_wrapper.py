@@ -36,13 +36,12 @@ def _get_object_layer(tag, layer_name):
 def _get_property(tag, name):
     ''' Get a property of a tmx map '''
     properties = tag.find('properties')
-    if properties is None:
-        raise KeyError("No child element 'properties' inside tag '%s'" %
-                repr(tag))
-    for prop in properties.findall('property'):
-        if prop.attrib['name'] == name:
-            return prop.attrib['value']
-    raise KeyError("Property '%s' is not available" % name)
+    if properties is not None:
+        for prop in properties.findall('property'):
+            if prop.attrib['name'] == name:
+                return prop.attrib['value']
+    raise KeyError("Property '%s' is not available inside tag '%s'" % name,
+        repr(tag))
 
 
 def _set_property(tag, name, value):
