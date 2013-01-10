@@ -20,46 +20,18 @@ LOGGER = logging.getLogger(__name__)
 
 from yaranullin.game.game import Game
 from yaranullin.event_system import post, connect
-from yaranullin.game.tmx_wrapper import TmxWrapper, ParseError
 
 
 class GameWrapper(object):
 
     def __init__(self):
         self.game = Game()
-        self.tmx_wrapper = TmxWrapper()
         connect('game-request-board-new', self.create_board)
         connect('game-request-board-del', self.del_board)
         connect('game-request-pawn-new', self.create_pawn)
         connect('game-request-pawn-move', self.move_pawn)
         connect('game-request-pawn-del', self.del_pawn)
         LOGGER.debug("GameWrapper initialized")
-
-    def request_update(self):
-        boards = self._dump_game()
-        post('game-event-update', tmxs=boards)
-
-    def _dump_game(self):
-        boards = {}
-        for name in self.game.boards:
-            board = self.tmx_wrapper.get_tmx_board(name)
-            if board:
-                boards[name] = board
-            else:
-                LOGGER.error("Unable to dump board '%s' to a string", name)
-        return boards
-
-    def load_from_files(self, files):
-        ''' Load a board and its pawns from a tmx file '''
-        for tmx in files:
-            try:
-                self.tmx_wrapper.load_board_from_file(tmx)
-            except IOError:
-                LOGGER.exception("Unable to open file '%s'", tmx)
-            except ParseError:
-                LOGGER.exception("Unable to parse file '%s'", tmx)
-            else:
-                LOGGER.info("Loaded board from file '%s'", tmx)
 
     def create_board(self, event_dict):
         name = event_dict['name']
