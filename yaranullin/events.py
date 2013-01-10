@@ -17,7 +17,23 @@
 
 '''List of all valid events'''
 
-EVENTS = set(
+
+EVENTS = set([
+    'any',
     'tick',  # Posted every frame
     'quit',  # Exit the main loop
-    )
+    'game-request-board-new',
+    'game-request-board-del',
+    'game-request-pawn-new',
+    'game-request-pawn-move',
+    'game-request-pawn-del',
+    'game-request-pawn-place',
+    'game-request-pawn-next',
+    'game-request-update',
+    'game-event-board-new',
+    'game-event-board-del',
+    'game-event-pawn-new',
+    'game-event-pawn-del',
+    'game-event-pawn-moved',
+    'game-event-pawn-next',
+    ])
