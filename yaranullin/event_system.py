@@ -171,7 +171,7 @@ def process_queue(queue=None, events=None):
     return stop
 
 
-def step():
+def step(dt):
     post('tick')
     stop = process_queue()
     if stop:
