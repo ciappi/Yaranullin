@@ -48,8 +48,6 @@ class YaranullinClientFactory(protocol.ClientFactory):
         connect('game-request-pawn-move', self.send)
         connect('game-request-pawn-place', self.send)
         connect('game-request-pawn-next', self.send)
-        connect('game-request-update', self.send)
-        connect('resource-request', self.send)
 
     def add(self, prot):
         self.endpoint = prot
@@ -60,7 +58,7 @@ class YaranullinClientFactory(protocol.ClientFactory):
 
     def process_queue(self):
         '''Process the event queue from Yaranullin's event system.'''
-        queue = self._from_yrn
+        queue = self.from_yrn
         while queue:
             self.endpoint.sendString(queue.popleft())
 
@@ -68,7 +66,7 @@ class YaranullinClientFactory(protocol.ClientFactory):
         post(json.loads(event_dict))
 
     def send(self, event_dict):
-        self._from_yrn.append(json.dumps(event_dict))
+        self.from_yrn.append(json.dumps(event_dict))
 
 
 class YaranullinServerFactory(protocol.ServerFactory):
@@ -79,11 +77,8 @@ class YaranullinServerFactory(protocol.ServerFactory):
 
     def __init__(self):
         connect('tick', self.process_queue)
-        connect('game-event-update', self.send)
         connect('game-event-pawn-next', self.send)
-        connect('game-event-pawn-updated', self.send)
-        connect('game-event-board-change', self.send)
-        connect('resource-update', self.send)
+        connect('game-event-pawn-moved', self.send)
 
     def add(self, prot):
         self.endpoints.add(prot)
@@ -94,7 +89,7 @@ class YaranullinServerFactory(protocol.ServerFactory):
 
     def process_queue(self):
         '''Process the event queue from Yaranullin's event system.'''
-        queue = self._from_yrn
+        queue = self.from_yrn
         while queue:
             for endpoint in self.endpoints:
                 endpoint.sendString(queue.popleft())
@@ -103,4 +98,4 @@ class YaranullinServerFactory(protocol.ServerFactory):
         post(json.loads(string))
 
     def send(self, event_dict):
-        self._from_yrn.append(json.dumps(event_dict))
+        self.from_yrn.append(json.dumps(event_dict))
