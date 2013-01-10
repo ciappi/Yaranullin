@@ -33,7 +33,6 @@ class GameWrapper(object):
         connect('game-request-pawn-new', self.create_pawn)
         connect('game-request-pawn-move', self.move_pawn)
         connect('game-request-pawn-del', self.del_pawn)
-        connect('game-request-update', self.request_update)
         LOGGER.debug("GameWrapper initialized")
 
     def request_update(self):
