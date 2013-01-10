@@ -14,19 +14,35 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+# install_twisted_rector must be called before importing  and using the reactor
+from kivy.support import install_twisted_reactor
+install_twisted_reactor()
+
+from twisted.internet import reactor
+
+from kivy.app import App
+from kivy.clock import Clock
+from kivy.uix.label import Label
+
 from yaranullin.config import CONFIG
-from yaranullin.event_system import post, process_queue
+from yaranullin.event_system import step
 from yaranullin.game.game_wrapper import GameWrapper
+from yaranullin.network.protocol import YaranullinServerFactory
 
 HOST = ''
 PORT = CONFIG.getint('network', 'port')
 GAME = GameWrapper()
 
 
+class TwistedServerApp(App):
+    def build(self):
+        self.label = Label(text="server started\n")
+        reactor.listenTCP(PORT, YaranullinServerFactory())
+        Clock.schedule_interval(step, 1 / 10.)
+        return self.label
+
+
 def run(args):
     ''' Main loop for the server '''
-    GAME.load_from_files(args.board)
-    stop = False
-    while not stop:
-        post('tick')
-        stop = process_queue()
+    #GAME.load_from_files(args.board)
+    TwistedServerApp().run()
