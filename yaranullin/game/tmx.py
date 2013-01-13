@@ -16,17 +16,19 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import os
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 from xml.etree import ElementTree
 
 from yaranullin.config import YR_SAVE_DIR
+from yaranullin.event_system import connect
 
 
 class ParseError(SyntaxError):
     ''' Error parsing tmx file '''
 
-#TODO: create a TmxBoard like a Board object, a TmxGame like a Game object
-#      then a TmxWrapper like a GameWrapper.
 
 class TmxBoard(object):
 
@@ -34,26 +36,69 @@ class TmxBoard(object):
         self.name = name
         self.size = size
         self.tilewidth = tilewidth
-        self.layer = None
-        self.properties = {}
+        self.pawns = {}
 
-    @classmethod
-    def open(cls, fname):
-        ''' Load and return a board from a tmx file '''
-        complete_path = os.path.join(YR_SAVE_DIR, fname)
-        with open(complete_path) as tmx_file:
-            tmx_map = tmx_file.read()
-        bname = os.path.splitext(os.path.basename(fname))[0]
-        return TmxBoard.load(bname, tmx_map)
+    def create_pawn(self, name, initiative, pos, size):
+        pass
 
-    @classmethod
-    def load(cls, bname, tmx_map):
-        ''' Load and return a board from a string '''
-        try:
-            tmx_map = ElementTree.fromstring(tmx_map)
-        except:
-            raise ParseError("Error parsing '%s'" % bname)
-        # Save basic board attribute
-        size = int(tmx_map.attrib['width']), int(tmx_map.attrib['height'])
-        tilewidth = int(tmx_map.attrib['tilewidth'])
-        return cls(bname, size, tilewidth)
+    def del_pawn(self, name):
+        pass
+
+    def move_pawn(self, name, pos, size=None):
+        pass
+
+
+class TmxGame(object):
+
+    def __init__(self):
+        self.boards = {}
+
+    def create_board(self, name, size, tilewidth):
+        pass
+
+    def del_board(self, name):
+        pass
+
+    def create_pawn(self, bname, pname, initiative, pos, size):
+        pass
+
+    def move_pawn(self, bname, pname, pos, size=None):
+        pass
+
+    def del_pawn(self, bname, pname):
+        pass
+
+    def clear(self):
+        ''' Clear all the boards '''
+        self.boards.clear()
+        LOGGER.info("Deleted all boards from the game")
+
+
+class TmxInterface(object):
+
+    def __init__(self):
+        self.game = TmxGame()
+        connect('game-event-board-new', self.create_board)
+        connect('game-event-board-del', self.del_board)
+        connect('game-event-pawn-new', self.create_pawn)
+        connect('game-event-pawn-move', self.move_pawn)
+        connect('game-event-pawn-del', self.del_pawn)
+        LOGGER.debug("TmxInterface initialized")
+
+    def create_board(self, event_dict):
+        pass
+
+    def del_board(self, event_dict):
+        pass
+
+    def create_pawn(self, event_dict):
+        pass
+
+    def move_pawn(self, event_dict):
+        pass
+
+    def del_pawn(self, event_dict):
+        pass
+
+    def clear(self):
+        pass
