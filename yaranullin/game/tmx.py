@@ -30,6 +30,15 @@ class ParseError(SyntaxError):
     ''' Error parsing tmx file '''
 
 
+class TmxPawn(object):
+
+    def __init__(self, name, initiative, size):
+        self.size = size
+        self.pos = None
+        self.initiative = initiative
+        self.name = name
+
+
 class TmxBoard(object):
 
     def __init__(self, name, size, tilewidth):
