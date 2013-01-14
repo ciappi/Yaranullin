@@ -15,11 +15,15 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import os
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 from xml.etree import ElementTree
 
 from yaranullin.config import YR_SAVE_DIR
 from yaranullin.event_system import post, connect
+from yaranullin.game.tmx import TmxGame
 
 
 class ParseError(SyntaxError):
@@ -44,47 +48,60 @@ def _get_property(tag, name):
         repr(tag))
 
 
-def _set_property(tag, name, value):
-    ''' Set a property of a tmx map '''
-    properties = tag.find('properties')
-    if not properties:
-        properties = ElementTree.Element('properties')
-        tag.append(properties)
-    properties.append(ElementTree.Element('property', name=name, value=value))
-
-
 class TmxWrapper(object):
 
     def __init__(self):
-        self._maps = {}
-        connect('game-event-pawn-moved', self.move_pawn)
+        self.game = TmxGame()
+        connect('game-event-board-new', self.create_board)
+        connect('game-event-board-del', self.del_board)
+        connect('game-event-pawn-new', self.create_pawn)
+        connect('game-event-pawn-move', self.move_pawn)
+        connect('game-event-pawn-del', self.del_pawn)
+        connect('load', self.load)
+        LOGGER.debug("TmxInterface initialized")
+
+    def create_board(self, event_dict):
+        name = event_dict['name']
+        size = event_dict['size']
+        self.game.create_board(name, size)
+
+    def del_board(self, event_dict):
+        name = event_dict['name']
+        self.game.del_board(name)
+
+    def create_pawn(self, event_dict):
+        bname = event_dict['bname']
+        pname = event_dict['pname']
+        initiative = event_dict['initiative']
+        pos = event_dict['pos']
+        size = event_dict['size']
+        self.game.create_pawn(bname, pname, initiative, pos, size)
 
     def move_pawn(self, event_dict):
-        ''' Change pawn position '''
         bname = event_dict['bname']
         pname = event_dict['pname']
         pos = event_dict['pos']
-        try:
-            xml_board = self._maps[bname]
-        except KeyError:
-            # The board was not loaded from a file
-            return
-        pawn_layer = _get_object_layer(xml_board, 'pawns')
-        for pawn in pawn_layer.findall('object'):
-            name = pawn.attrib['name']
-            if name == pname:
-                pawn.attrib['x'] = pos[0]
-                pawn.attrib['y'] = pos[1]
+        size = event_dict['size']
+        self.game.create_pawn(bname, pname, pos, size)
 
-    def load_board_from_file(self, fname):
+    def del_pawn(self, event_dict):
+        bname = event_dict['bname']
+        pname = event_dict['pname']
+        self.game.del_pawn(bname, pname)
+
+    def clear(self):
+        self.game.clear()
+
+    def load(self, event_dict):
         ''' Load and return a board from a tmx file '''
+        fname = event_dict['fname']
         complete_path = os.path.join(YR_SAVE_DIR, fname)
         with open(complete_path) as tmx_file:
             tmx_map = tmx_file.read()
         bname = os.path.splitext(os.path.basename(fname))[0]
-        self.load_board_from_tmx(bname, tmx_map)
+        self.load_from_string(bname, tmx_map)
 
-    def load_board_from_tmx(self, bname, tmx_map):
+    def load_from_string(self, bname, tmx_map):
         ''' Load and return a board from a string '''
         try:
             tmx_map = ElementTree.fromstring(tmx_map)
@@ -118,12 +135,5 @@ class TmxWrapper(object):
                         pname=name, initiative=initiative, pos=pos,
                         size=size))
                 events.append(new_pawn_event)
-        # Now add the board to _maps
-        self._maps[bname] = tmx_map
         for event in events:
             post(event[0], event[1])
-
-    def get_tmx_board(self, bname):
-        ''' Return an tmx version of board '''
-        if bname in self._maps:
-            return ElementTree.tostring(self._maps[bname])
