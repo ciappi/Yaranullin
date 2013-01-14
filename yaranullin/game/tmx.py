@@ -15,22 +15,14 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import os
 import logging
 
 LOGGER = logging.getLogger(__name__)
 
 from xml.etree import ElementTree
 
-from yaranullin.config import YR_SAVE_DIR
-from yaranullin.event_system import connect
-
 
 TW = 32
-
-
-class ParseError(SyntaxError):
-    ''' Error parsing tmx file '''
 
 
 class Object(ElementTree.Element):
@@ -41,20 +33,22 @@ class Object(ElementTree.Element):
         self.append(self._properties)
 
     def _get_size(self):
-        return self.get('width') / TW, self.get('height') / TW
+        return (int(self.get('width')) / TW,
+            int(self.get('height')) / TW)
 
     def _set_size(self, value):
-        self.set('width', value[0] * TW)
-        self.set('height', value[1] * TW)
+        self.set('width', str(value[0] * TW))
+        self.set('height', str(value[1] * TW))
 
     size = property(_get_size, _set_size)
 
     def _get_pos(self):
-        return self.get('x') / TW, self.get('y') / TW
+        return (int(self.get('x')) / TW,
+            int(self.get('y')) / TW)
 
     def _set_pos(self, value):
-        self.set('x', value[0] * TW)
-        self.set('y', value[1] * TW)
+        self.set('x', str(value[0] * TW))
+        self.set('y', str(value[1] * TW))
 
     pos = property(_get_pos, _set_pos)
 
@@ -64,13 +58,16 @@ class Object(ElementTree.Element):
                 prop.attrib['value'] = value
                 return
         prop = ElementTree.Element('property', name=name,
-            value=value)
+            value=str(value))
         self._properties.append(prop)
 
     def get_property(self, name):
         for prop in self._properties.findall('property'):
             if prop.attrib['name'] == name:
-                return prop.attrib['value']
+                try:
+                    return int(prop.attrib['value'])
+                except ValueError:
+                    return prop.attrib['value']
 
 
 class TmxPawn(Object):
@@ -82,22 +79,49 @@ class TmxPawn(Object):
         self.size = size
 
 
-class TmxBoard(object):
+class TmxBoard(ElementTree.Element):
 
-    def __init__(self, name, size, tilewidth):
-        self.name = name
-        self.size = size
-        self.tilewidth = tilewidth
-        self.pawns = {}
+    VERSION = '1.0'
+
+    def __init__(self, name, size):
+        super(TmxBoard, self).__init__('map')
+        self.set('version', self.VERSION)
+        self.set('orientation', 'orthogonal')
+        self.set('name', name)
+        self.set('width', str(size[0]))
+        self.set('height', str(size[1]))
+        self.set('tilewidth', str(TW))
+        self.set('tileheight', str(TW))
+        self.grid = ElementTree.Element('layer', name='bg',
+            width=str(size[0]), height=str(size[1]))
+        self.tiles = ElementTree.Element('data', encoding='base64',
+            compression='zlib')
+        self.tiles.text = ''
+        self.grid.append(self.tiles)
+        self.append(self.grid)
+        self.pawns = ElementTree.Element('objectgroup',
+            name='pawns', width=str(size[0]), height=str(size[1]))
+        self.append(self.pawns)
+
+    def _get_pawn(self, name):
+        for pawn in self.pawns.findall('object'):
+            if pawn.get('name') == name:
+                return pawn
 
     def create_pawn(self, name, initiative, pos, size):
-        pass
+        pawn = TmxPawn(name, initiative, size)
+        pawn.pos = pos
+        self.pawns.append(pawn)
 
     def del_pawn(self, name):
-        pass
+        pawn = self._get_pawn(name)
+        if pawn:
+            self.pawns.remove(pawn)
 
     def move_pawn(self, name, pos, size=None):
-        pass
+        pawn = self._get_pawn(name)
+        if pawn:
+            pawn.pos = pos
 
 
 class TmxGame(object):
@@ -105,52 +129,29 @@ class TmxGame(object):
     def __init__(self):
         self.boards = {}
 
-    def create_board(self, name, size, tilewidth):
-        pass
+    def create_board(self, name, size):
+        self.boards[name] = TmxBoard(name, size)
 
     def del_board(self, name):
-        pass
+        if name in self.boards:
+            del self.boards[name]
 
     def create_pawn(self, bname, pname, initiative, pos, size):
-        pass
+        if bname not in self.boards:
+            return
+        self.boards[bname].create_pawn(pname, initiative, pos, size)
 
     def move_pawn(self, bname, pname, pos, size=None):
-        pass
+        if bname not in self.boards:
+            return
+        self.boards[bname].create_pawn(pname, pos, size)
 
     def del_pawn(self, bname, pname):
-        pass
+        if bname not in self.boards:
+            return
+        self.boards[bname].del_pawn(pname)
 
     def clear(self):
         ''' Clear all the boards '''
         self.boards.clear()
         LOGGER.info("Deleted all boards from the game")
-
-
-class TmxInterface(object):
-
-    def __init__(self):
-        self.game = TmxGame()
-        connect('game-event-board-new', self.create_board)
-        connect('game-event-board-del', self.del_board)
-        connect('game-event-pawn-new', self.create_pawn)
-        connect('game-event-pawn-move', self.move_pawn)
-        connect('game-event-pawn-del', self.del_pawn)
-        LOGGER.debug("TmxInterface initialized")
-
-    def create_board(self, event_dict):
-        pass
-
-    def del_board(self, event_dict):
-        pass
-
-    def create_pawn(self, event_dict):
-        pass
-
-    def move_pawn(self, event_dict):
-        pass
-
-    def del_pawn(self, event_dict):
-        pass
-
-    def clear(self):
-        pass
