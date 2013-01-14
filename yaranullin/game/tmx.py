@@ -26,17 +26,60 @@ from yaranullin.config import YR_SAVE_DIR
 from yaranullin.event_system import connect
 
 
+TW = 32
+
+
 class ParseError(SyntaxError):
     ''' Error parsing tmx file '''
 
 
-class TmxPawn(object):
+class Object(ElementTree.Element):
+
+    def __init__(self):
+        super(Object, self).__init__('object')
+        self._properties = ElementTree.Element('properties')
+        self.append(self._properties)
+
+    def _get_size(self):
+        return self.get('width') / TW, self.get('height') / TW
+
+    def _set_size(self, value):
+        self.set('width', value[0] * TW)
+        self.set('height', value[1] * TW)
+
+    size = property(_get_size, _set_size)
+
+    def _get_pos(self):
+        return self.get('x') / TW, self.get('y') / TW
+
+    def _set_pos(self, value):
+        self.set('x', value[0] * TW)
+        self.set('y', value[1] * TW)
+
+    pos = property(_get_pos, _set_pos)
+
+    def set_property(self, name, value):
+        for prop in self._properties.findall('property'):
+            if prop.attrib['name'] == name:
+                prop.attrib['value'] = value
+                return
+        prop = ElementTree.Element('property', name=name,
+            value=value)
+        self._properties.append(prop)
+
+    def get_property(self, name):
+        for prop in self._properties.findall('property'):
+            if prop.attrib['name'] == name:
+                return prop.attrib['value']
+
+
+class TmxPawn(Object):
 
     def __init__(self, name, initiative, size):
+        super(TmxPawn, self).__init__()
+        self.set('name', name)
+        self.set_property('initiative', initiative)
         self.size = size
-        self.pos = None
-        self.initiative = initiative
-        self.name = name
 
 
 class TmxBoard(object):
