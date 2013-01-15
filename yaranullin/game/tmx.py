@@ -1,5 +1,5 @@
 # -*- coding: utf-8 *-*
-# yaranullin/game/tmx_wrapper.py
+# yaranullin/game/tmx.py
 #
 # Copyright (c) 2012 Marco Scopesi <marco.scopesi@gmail.com>
 #
@@ -115,12 +115,12 @@ class TmxBoard(ElementTree.Element):
 
     def del_pawn(self, name):
         pawn = self._get_pawn(name)
-        if pawn:
+        if pawn is not None:
             self.pawns.remove(pawn)
 
     def move_pawn(self, name, pos, size=None):
         pawn = self._get_pawn(name)
-        if pawn:
+        if pawn is not None:
             pawn.pos = pos
 
 
