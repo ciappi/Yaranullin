@@ -109,6 +109,9 @@ class TmxBoard(ElementTree.Element):
                 return pawn
 
     def create_pawn(self, name, initiative, pos, size):
+        pawn = self._get_pawn(name)
+        if pawn is not None:
+            return
         pawn = TmxPawn(name, initiative, size)
         pawn.pos = pos
         self.pawns.append(pawn)
