@@ -52,7 +52,7 @@ def connect(event, callback, events=None):
 
 def _disconnect(event, callback, events=None):
     ''' Disconnect a callback from an event '''
-    if events in None:
+    if events is None:
         events = _EVENTS
     wrapper = WeakCallback(callback)
     if wrapper in events[event]:
